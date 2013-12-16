@@ -8,7 +8,7 @@ import play.api.mvc.Handler
 import play.api.mvc.Controller
 import play.api.Logger
 
-trait RestRouter[Id, C <:Controller with IdentifiedResource[Id]] extends Router.Routes {
+trait RestRouter[C <:Controller] extends Router.Routes {
   def controller: C
 
   protected var _prefix: String =""
@@ -31,7 +31,8 @@ trait RestRouter[Id, C <:Controller with IdentifiedResource[Id]] extends Router.
   }
 
   private val IdExpression = "/([^/]+)/?".r
-  abstract class IdRoutingHandler extends RoutingHandler {
+  abstract class IdRoutingHandler[Id, T <:IdentifiedResource[Id]] extends RoutingHandler {
+    def resource: T
     def isDefined(requestHeader: RequestHeader) = {
       requestHeader.path.drop(_prefix.length()) match {
         case "" | "/" => true
@@ -43,7 +44,7 @@ trait RestRouter[Id, C <:Controller with IdentifiedResource[Id]] extends Router.
     def apply[A <: RequestHeader, B>: Handler]( requestHeader: A, default: A => B): B = {
       requestHeader.path.drop(_prefix.length()) match {
         case "" | "/" => withoutId(requestHeader, default)
-        case IdExpression(id) => controller.fromId(id) match {
+        case IdExpression(id) => resource.fromId(id) match {
           case Some(id) => withId(id, requestHeader, default)
           case _ => default(requestHeader)
         }
@@ -56,25 +57,30 @@ trait RestRouter[Id, C <:Controller with IdentifiedResource[Id]] extends Router.
     }
   }
 
-  class GetRoutingHandler(val resource: ResourceRead[Id]) extends IdRoutingHandler {
+  class GetRoutingHandler[Id](val resource: ResourceRead[Id]) extends IdRoutingHandler[Id, ResourceRead[Id]] {
     def withId[A <: RequestHeader, B>: Handler]( id: Id, requestHeader: A, default: A => B) = { resource.get(id) }
     override def withoutId[A <: RequestHeader, B>: Handler](requestHeader: A, default: A => B) = { resource.list }
   }
 
-  class PostRoutingHandler(val resource: ResourceAction) extends IdRoutingHandler {
-    def withId[A <: RequestHeader, B>: Handler]( id: Id, requestHeader: A, default: A => B) = { default(requestHeader) }
-    override def withoutId[A <: RequestHeader, B>: Handler](requestHeader: A, default: A => B) = { resource.post }
+  class PostRoutingHandler(val resource: ResourceAction) extends RoutingHandler() {
+    def isDefined(requestHeader: RequestHeader) = true
+    def apply[A <: RequestHeader, B>: Handler]( requestHeader: A, default: A => B): B = {
+      requestHeader.path.drop(_prefix.length()) match {
+        case "" | "/" => resource.post
+        case _ => default(requestHeader)
+      }
+    }
   }
 
-  class PutRoutingHandler(val resource: ResourceOverwrite[Id]) extends IdRoutingHandler {
+  class PutRoutingHandler[Id](val resource: ResourceOverwrite[Id]) extends IdRoutingHandler[Id, ResourceOverwrite[Id]] {
     def withId[A <: RequestHeader, B>: Handler]( id: Id, requestHeader: A, default: A => B) = { resource.put(id) }
   }
 
-  class DeleteRoutingHandler(val resource: ResourceUpdate[Id]) extends IdRoutingHandler {
+  class DeleteRoutingHandler[Id](val resource: ResourceUpdate[Id]) extends IdRoutingHandler[Id, ResourceUpdate[Id]] {
     def withId[A <: RequestHeader, B>: Handler]( id: Id, requestHeader: A, default: A => B) = { resource.delete(id) }
   }
 
-  class PatchRoutingHandler(val resource: ResourceUpdate[Id]) extends IdRoutingHandler {
+  class PatchRoutingHandler[Id](val resource: ResourceUpdate[Id]) extends IdRoutingHandler[Id, ResourceUpdate[Id]] {
     def withId[A <: RequestHeader, B>: Handler]( id: Id, requestHeader: A, default: A => B) = { resource.update(id) }
   }
 
@@ -83,11 +89,11 @@ trait RestRouter[Id, C <:Controller with IdentifiedResource[Id]] extends Router.
         val method = requestHeader.method
 
         (method, controller) match {
-          case ("GET", c:ResourceRead[Id]) => new GetRoutingHandler(c)
+          case ("GET", c:ResourceRead[_]) => new GetRoutingHandler(c)
           case ("POST", c:ResourceAction) => new PostRoutingHandler(c)
-          case ("PUT", c: ResourceOverwrite[Id]) => new PutRoutingHandler(c)
-          case ("DELETE", c:ResourceUpdate[Id]) => new DeleteRoutingHandler(c)
-          case ("PATCH", c:ResourceUpdate[Id]) => new PatchRoutingHandler(c)
+          case ("PUT", c: ResourceOverwrite[_]) => new PutRoutingHandler(c)
+          case ("DELETE", c:ResourceUpdate[_]) => new DeleteRoutingHandler(c)
+          case ("PATCH", c:ResourceUpdate[_]) => new PatchRoutingHandler(c)
           case _     => DefaultRoutingHandler
         }
       } else {

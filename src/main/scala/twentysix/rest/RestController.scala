@@ -12,12 +12,12 @@ trait IdentifiedResource[Id] {
   def fromId(id: String): Option[Id]
 }
 
-trait ResourceRead[Id] {
+trait ResourceRead[Id] extends IdentifiedResource[Id]{
   def get(id: Id): EssentialAction
   def list(): EssentialAction
 }
 
-trait ResourceOverwrite[Id] {
+trait ResourceOverwrite[Id] extends IdentifiedResource[Id]{
   def put(id: Id): EssentialAction
 }
 
@@ -25,7 +25,7 @@ trait ResourceAction {
   def post(): EssentialAction
 }
 
-trait ResourceUpdate[Id] {
+trait ResourceUpdate[Id] extends IdentifiedResource[Id]{
   def delete(id: Id): EssentialAction
   def update(id: Id): EssentialAction
 }
