@@ -7,6 +7,7 @@ import play.api.mvc.RequestHeader
 import play.api.mvc.Handler
 import play.api.mvc.Controller
 import play.api.Logger
+import play.api.mvc.Controller
 
 trait RestRouter[C <:Controller] extends Router.Routes {
   def controller: C
@@ -30,7 +31,9 @@ trait RestRouter[C <:Controller] extends Router.Routes {
     def apply[A <: RequestHeader, B>: Handler]( requestHeader: A, default: A => B): B = default(requestHeader)
   }
 
-  private val IdExpression = "/([^/]+)/?".r
+  private val IdExpression = "^/([^/]+)/?$".r
+  private val SubResourceExpression = "^(/([^/]+)/([^/]+)).*$".r
+
   abstract class IdRoutingHandler[Id, T <:IdentifiedResource[Id]] extends RoutingHandler {
     def resource: T
     def isDefined(requestHeader: RequestHeader) = {
@@ -84,16 +87,39 @@ trait RestRouter[C <:Controller] extends Router.Routes {
     def withId[A <: RequestHeader, B>: Handler]( id: Id, requestHeader: A, default: A => B) = { resource.update(id) }
   }
 
+  class SubRoutingHandler[Id](val resource: SubResource[Id]) extends RoutingHandler {
+    def isDefined(requestHeader: RequestHeader) = true
+    def apply[A <: RequestHeader, B>: Handler]( requestHeader: A, default: A => B): B = {
+      requestHeader.path.drop(_prefix.length()) match {
+        case SubResourceExpression(subPrefix, sid, subResource) => {
+          for {
+            f <- resource.subResources.get(subResource)
+            id <- resource.fromId(sid)
+            res <- Router.Include {
+              val router = new RestRouter[Controller]{ val controller = f(id) }
+              router.setPrefix(requestHeader.path.take(_prefix.length()+subPrefix.length()))
+              router
+            }.unapply(requestHeader)
+          } yield res
+        }.getOrElse(default(requestHeader))
+
+        case _ => default(requestHeader)
+      }
+    }
+  }
+
   def findRoutingHandler(requestHeader: RequestHeader): RoutingHandler = {
       if(requestHeader.path.startsWith(_prefix)) {
+        val path = requestHeader.path.drop(_prefix.length())
         val method = requestHeader.method
 
-        (method, controller) match {
-          case ("GET", c:ResourceRead[_]) => new GetRoutingHandler(c)
-          case ("POST", c:ResourceAction) => new PostRoutingHandler(c)
-          case ("PUT", c: ResourceOverwrite[_]) => new PutRoutingHandler(c)
-          case ("DELETE", c:ResourceUpdate[_]) => new DeleteRoutingHandler(c)
-          case ("PATCH", c:ResourceUpdate[_]) => new PatchRoutingHandler(c)
+        (path, method, controller) match {
+          case (SubResourceExpression(_, _, _), _, c:SubResource[_]) => new SubRoutingHandler(c)
+          case (_, "GET", c:ResourceRead[_]) => new GetRoutingHandler(c)
+          case (_, "POST", c:ResourceAction) => new PostRoutingHandler(c)
+          case (_, "PUT", c: ResourceOverwrite[_]) => new PutRoutingHandler(c)
+          case (_, "DELETE", c:ResourceUpdate[_]) => new DeleteRoutingHandler(c)
+          case (_, "PATCH", c:ResourceUpdate[_]) => new PatchRoutingHandler(c)
           case _     => DefaultRoutingHandler
         }
       } else {

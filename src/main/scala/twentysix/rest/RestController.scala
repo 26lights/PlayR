@@ -30,6 +30,10 @@ trait ResourceUpdate[Id] extends IdentifiedResource[Id]{
   def update(id: Id): EssentialAction
 }
 
+trait SubResource[Id] extends IdentifiedResource[Id]{
+  def subResources: Map[String, Id => Controller]
+}
+
 trait RestController[Id] extends Controller with IdentifiedResource[Id]
 
 trait RestReadController[Id] extends Controller with IdentifiedResource[Id]
