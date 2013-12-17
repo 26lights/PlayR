@@ -31,7 +31,7 @@ class RestRouter(val controller: Controller) extends Router.Routes {
   def _getRoutingHandler[Id](resource: ResourceRead[Id])(sid: String) = resource.fromId(sid).map { resource.get(_) }
   def _listRoutingHandler[Id](resource: ResourceRead[Id])() = Some(resource.list)
   def _putRoutingHandler[Id](resource: ResourceOverwrite[Id])(sid: String) = resource.fromId(sid).map { resource.put(_) }
-  def _deleteRoutingHandler[Id](resource: ResourceUpdate[Id])(sid: String) = resource.fromId(sid).map { resource.delete(_) }
+  def _deleteRoutingHandler[Id](resource: ResourceDelete[Id])(sid: String) = resource.fromId(sid).map { resource.delete(_) }
   def _patchRoutingHandler[Id](resource: ResourceUpdate[Id])(sid: String) = resource.fromId(sid).map { resource.update(_) }
   def _postRoutingHandler[Id](resource: ResourceAction)() = Some(resource.post)
   def _subRoutingHandler[Id](resource: SubResource[Id])(requestHeader: RequestHeader, subPrefix: String, sid: String, subPath: String) = {
@@ -58,7 +58,7 @@ class RestRouter(val controller: Controller) extends Router.Routes {
   val listRoutingHandler = controllerAs[ResourceRead[_]].map( _listRoutingHandler(_) _).getOrElse(_defaultRoutingHandler _)
   val putRoutingHandler = controllerAs[ResourceOverwrite[_]].map( _putRoutingHandler(_) _).getOrElse(_defaultIdRoutingHandler _)
   val patchRoutingHandler = controllerAs[ResourceUpdate[_]].map( _patchRoutingHandler(_) _).getOrElse(_defaultIdRoutingHandler _)
-  val deleteRoutingHandler = controllerAs[ResourceUpdate[_]].map( _deleteRoutingHandler(_) _).getOrElse(_defaultIdRoutingHandler _)
+  val deleteRoutingHandler = controllerAs[ResourceDelete[_]].map( _deleteRoutingHandler(_) _).getOrElse(_defaultIdRoutingHandler _)
   val postRoutingHandler = controllerAs[ResourceAction].map( _postRoutingHandler(_) _).getOrElse(_defaultRoutingHandler _)
   val subRoutingHandler = controllerAs[SubResource[_]].map( _subRoutingHandler(_) _).getOrElse(_defaultSubRoutingHandler _)
 

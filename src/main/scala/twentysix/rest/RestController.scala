@@ -25,8 +25,11 @@ trait ResourceAction {
   def post(): EssentialAction
 }
 
-trait ResourceUpdate[Id] extends IdentifiedResource[Id]{
+trait ResourceDelete[Id] extends IdentifiedResource[Id]{
   def delete(id: Id): EssentialAction
+}
+
+trait ResourceUpdate[Id] extends IdentifiedResource[Id]{
   def update(id: Id): EssentialAction
 }
 
@@ -40,7 +43,7 @@ trait RestReadController[Id] extends Controller with IdentifiedResource[Id]
                                                   with ResourceRead[Id]
 
 trait RestCrudController[Id] extends Controller with IdentifiedResource[Id]
-                                                 with ResourceRead[Id]
-                                                 with ResourceOverwrite[Id]
-                                                 with ResourceUpdate[Id]
                                                  with ResourceAction
+                                                 with ResourceRead[Id]
+                                                 with ResourceDelete[Id]
+                                                 with ResourceUpdate[Id]
