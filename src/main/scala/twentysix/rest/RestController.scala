@@ -36,7 +36,7 @@ trait ResourceRead[Id] extends IdentifiedResource[Id]{
  * Respond to HTTP PUT method
  */
 trait ResourceOverwrite[Id] extends IdentifiedResource[Id]{
-  def put(id: Id): EssentialAction
+  def overwrite(id: Id): EssentialAction
 }
 
 /**

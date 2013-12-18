@@ -58,7 +58,7 @@ class RestRouter(val controller: Controller) extends Router.Routes {
     () => Some(resource.list)
 
   private def _putRoutingHandler[Id](resource: ResourceOverwrite[Id]) =
-    (sid: String) => resource.fromId(sid).map { resource.put(_) }
+    (sid: String) => resource.fromId(sid).map { resource.overwrite(_) }
 
   private def _deleteRoutingHandler[Id](resource: ResourceDelete[Id]) =
     (sid: String) => resource.fromId(sid).map { resource.delete(_) }
