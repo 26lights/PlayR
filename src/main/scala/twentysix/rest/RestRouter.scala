@@ -10,6 +10,28 @@ import play.api.Logger
 import play.api.mvc.Controller
 import scala.reflect._
 
+abstract class RestAction[Id] {
+  def apply(id: Id, requestHeader: RequestHeader, prefix: String): Option[Handler]
+
+}
+object RestAction {
+  def apply[Id](f: Id => Controller) = new RestAction[Id] {
+    def apply(id: Id, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
+      Router.Include {
+        val router = new RestRouter(f(id))
+        router.setPrefix(prefix)
+        router
+      }.unapply(requestHeader)
+    }
+  }
+  def apply[Id](method: String, f: Id => EssentialAction) = new RestAction[Id] {
+    def apply(id: Id, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
+        if (method==requestHeader.method) Some(f(id))
+        else None
+    }
+  }
+}
+
 class RestRouter(val controller: Controller) extends Router.Routes {
 
   protected var _prefix: String =""
@@ -33,16 +55,12 @@ class RestRouter(val controller: Controller) extends Router.Routes {
   def _putRoutingHandler[Id](resource: ResourceOverwrite[Id])(sid: String) = resource.fromId(sid).map { resource.put(_) }
   def _deleteRoutingHandler[Id](resource: ResourceDelete[Id])(sid: String) = resource.fromId(sid).map { resource.delete(_) }
   def _patchRoutingHandler[Id](resource: ResourceUpdate[Id])(sid: String) = resource.fromId(sid).map { resource.update(_) }
-  def _postRoutingHandler[Id](resource: ResourceAction)() = Some(resource.post)
+  def _postRoutingHandler[Id](resource: ResourceCreate)() = Some(resource.create)
   def _subRoutingHandler[Id](resource: SubResource[Id])(requestHeader: RequestHeader, subPrefix: String, sid: String, subPath: String) = {
     for {
-      f <- resource.subResources.get(subPath)
+      action <- resource.subResources.get(subPath)
       id <- resource.fromId(sid)
-      res <- Router.Include {
-        val router = new RestRouter(f(id))
-        router.setPrefix(requestHeader.path.take(_prefix.length()+subPrefix.length()))
-        router
-      }.unapply(requestHeader)
+      res <- action(id, requestHeader, requestHeader.path.take(_prefix.length()+subPrefix.length()))
     } yield res
   }
 
@@ -59,7 +77,7 @@ class RestRouter(val controller: Controller) extends Router.Routes {
   val putRoutingHandler = controllerAs[ResourceOverwrite[_]].map( _putRoutingHandler(_) _).getOrElse(_defaultIdRoutingHandler _)
   val patchRoutingHandler = controllerAs[ResourceUpdate[_]].map( _patchRoutingHandler(_) _).getOrElse(_defaultIdRoutingHandler _)
   val deleteRoutingHandler = controllerAs[ResourceDelete[_]].map( _deleteRoutingHandler(_) _).getOrElse(_defaultIdRoutingHandler _)
-  val postRoutingHandler = controllerAs[ResourceAction].map( _postRoutingHandler(_) _).getOrElse(_defaultRoutingHandler _)
+  val postRoutingHandler = controllerAs[ResourceCreate].map( _postRoutingHandler(_) _).getOrElse(_defaultRoutingHandler _)
   val subRoutingHandler = controllerAs[SubResource[_]].map( _subRoutingHandler(_) _).getOrElse(_defaultSubRoutingHandler _)
 
   def routes = new AbstractPartialFunction[RequestHeader, Handler] {
@@ -92,7 +110,7 @@ class RestRouter(val controller: Controller) extends Router.Routes {
         (path, method, controller) match {
           case (SubResourceExpression(_, _, _), _, c:SubResource[_]) => true
           case (_, "GET", c:ResourceRead[_]) => true
-          case (_, "POST", c:ResourceAction) => true
+          case (_, "POST", c:ResourceCreate) => true
           case (IdExpression(_), "PUT", c: ResourceOverwrite[_]) => true
           case (IdExpression(_), "DELETE", c:ResourceUpdate[_]) => true
           case (IdExpression(_), "PATCH", c:ResourceUpdate[_]) => true
