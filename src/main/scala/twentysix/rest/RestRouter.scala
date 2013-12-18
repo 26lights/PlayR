@@ -46,25 +46,39 @@ class RestRouter(val controller: Controller) extends Router.Routes {
   private val IdExpression = "^/([^/]+)/?$".r
   private val SubResourceExpression = "^(/([^/]+)/([^/]+)).*$".r
 
-  def _defaultRoutingHandler() = None
-  def _defaultIdRoutingHandler(id: String) = None
-  def _defaultSubRoutingHandler(requestHeader: RequestHeader, subPrefix: String, id: String, subPath: String) = None
+  val f = (id:String) => println(id)
+  private val _defaultRoutingHandler = () => None
+  private val _defaultIdRoutingHandler = (id: String) => None
+  private val _defaultSubRoutingHandler = (requestHeader: RequestHeader, subPrefix: String, id: String, subPath: String) => None
 
-  def _getRoutingHandler[Id](resource: ResourceRead[Id])(sid: String) = resource.fromId(sid).map { resource.get(_) }
-  def _listRoutingHandler[Id](resource: ResourceRead[Id])() = Some(resource.list)
-  def _putRoutingHandler[Id](resource: ResourceOverwrite[Id])(sid: String) = resource.fromId(sid).map { resource.put(_) }
-  def _deleteRoutingHandler[Id](resource: ResourceDelete[Id])(sid: String) = resource.fromId(sid).map { resource.delete(_) }
-  def _patchRoutingHandler[Id](resource: ResourceUpdate[Id])(sid: String) = resource.fromId(sid).map { resource.update(_) }
-  def _postRoutingHandler[Id](resource: ResourceCreate)() = Some(resource.create)
-  def _subRoutingHandler[Id](resource: SubResource[Id])(requestHeader: RequestHeader, subPrefix: String, sid: String, subPath: String) = {
-    for {
-      action <- resource.subResources.get(subPath)
-      id <- resource.fromId(sid)
-      res <- action(id, requestHeader, requestHeader.path.take(_prefix.length()+subPrefix.length()))
-    } yield res
-  }
+  private def _getRoutingHandler[Id](resource: ResourceRead[Id]) =
+    (sid: String) => resource.fromId(sid).map { resource.get(_) }
 
-  def controllerAs[A: ClassTag]: Option[A] = {
+  private def _listRoutingHandler[Id](resource: ResourceRead[Id]) =
+    () => Some(resource.list)
+
+  private def _putRoutingHandler[Id](resource: ResourceOverwrite[Id]) =
+    (sid: String) => resource.fromId(sid).map { resource.put(_) }
+
+  private def _deleteRoutingHandler[Id](resource: ResourceDelete[Id]) =
+    (sid: String) => resource.fromId(sid).map { resource.delete(_) }
+
+  private def _patchRoutingHandler[Id](resource: ResourceUpdate[Id]) =
+    (sid: String) => resource.fromId(sid).map { resource.update(_) }
+
+  private def _postRoutingHandler[Id](resource: ResourceCreate) =
+    () => Some(resource.create)
+
+  private def _subRoutingHandler[Id](resource: SubResource[Id]) =
+    (requestHeader: RequestHeader, subPrefix: String, sid: String, subPath: String) => {
+      for {
+        action <- resource.subResources.get(subPath)
+        id <- resource.fromId(sid)
+        res <- action(id, requestHeader, requestHeader.path.take(_prefix.length()+subPrefix.length()))
+      } yield res
+    }
+
+  private def controllerAs[A: ClassTag]: Option[A] = {
     if(classTag[A].runtimeClass.isInstance(controller)) {
       Some(controller.asInstanceOf[A])
     } else {
@@ -72,13 +86,13 @@ class RestRouter(val controller: Controller) extends Router.Routes {
     }
   }
 
-  val getRoutingHandler = controllerAs[ResourceRead[_]].map( _getRoutingHandler(_) _).getOrElse(_defaultIdRoutingHandler _)
-  val listRoutingHandler = controllerAs[ResourceRead[_]].map( _listRoutingHandler(_) _).getOrElse(_defaultRoutingHandler _)
-  val putRoutingHandler = controllerAs[ResourceOverwrite[_]].map( _putRoutingHandler(_) _).getOrElse(_defaultIdRoutingHandler _)
-  val patchRoutingHandler = controllerAs[ResourceUpdate[_]].map( _patchRoutingHandler(_) _).getOrElse(_defaultIdRoutingHandler _)
-  val deleteRoutingHandler = controllerAs[ResourceDelete[_]].map( _deleteRoutingHandler(_) _).getOrElse(_defaultIdRoutingHandler _)
-  val postRoutingHandler = controllerAs[ResourceCreate].map( _postRoutingHandler(_) _).getOrElse(_defaultRoutingHandler _)
-  val subRoutingHandler = controllerAs[SubResource[_]].map( _subRoutingHandler(_) _).getOrElse(_defaultSubRoutingHandler _)
+  val getRoutingHandler = controllerAs[ResourceRead[_]].map( _getRoutingHandler(_)).getOrElse(_defaultIdRoutingHandler)
+  val listRoutingHandler = controllerAs[ResourceRead[_]].map( _listRoutingHandler(_)).getOrElse(_defaultRoutingHandler)
+  val putRoutingHandler = controllerAs[ResourceOverwrite[_]].map( _putRoutingHandler(_)).getOrElse(_defaultIdRoutingHandler)
+  val patchRoutingHandler = controllerAs[ResourceUpdate[_]].map( _patchRoutingHandler(_)).getOrElse(_defaultIdRoutingHandler)
+  val deleteRoutingHandler = controllerAs[ResourceDelete[_]].map( _deleteRoutingHandler(_)).getOrElse(_defaultIdRoutingHandler)
+  val postRoutingHandler = controllerAs[ResourceCreate].map( _postRoutingHandler(_)).getOrElse(_defaultRoutingHandler)
+  val subRoutingHandler = controllerAs[SubResource[_]].map( _subRoutingHandler(_)).getOrElse(_defaultSubRoutingHandler)
 
   def routes = new AbstractPartialFunction[RequestHeader, Handler] {
     override def applyOrElse[A <: RequestHeader, B>: Handler]( requestHeader: A, default: A => B) = {
