@@ -1,13 +1,8 @@
 package twentysix.rest
 
 import play.core.Router
-import play.api.mvc.EssentialAction
+import play.api.mvc._
 import scala.runtime.AbstractPartialFunction
-import play.api.mvc.RequestHeader
-import play.api.mvc.Handler
-import play.api.mvc.Controller
-import play.api.Logger
-import play.api.mvc.Controller
 import scala.reflect._
 
 abstract class RestAction[Id] {
@@ -27,7 +22,7 @@ object RestAction {
   def apply[Id](method: String, f: Id => EssentialAction) = new RestAction[Id] {
     def apply(id: Id, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
         if (method==requestHeader.method) Some(f(id))
-        else None
+        else Some(Action { Results.MethodNotAllowed })
     }
   }
 }
@@ -47,15 +42,20 @@ class RestRouter(val controller: Controller) extends Router.Routes {
   private val SubResourceExpression = "^(/([^/]+)/([^/]+)).*$".r
 
   val f = (id:String) => println(id)
-  private val _defaultRoutingHandler = () => None
-  private val _defaultIdRoutingHandler = (id: String) => None
+  private var methodNotAllowed = Action { Results.MethodNotAllowed }
+  private val _defaultVerifyId = (sid: String) => false
+  private val _defaultRoutingHandler = () => methodNotAllowed
+  private val _defaultIdRoutingHandler = (sid: String) => if(verifyId(sid)) Some(methodNotAllowed) else None
   private val _defaultSubRoutingHandler = (requestHeader: RequestHeader, subPrefix: String, id: String, subPath: String) => None
+
+  private def _verifyId[Id](resource: IdentifiedResource[Id]) =
+    (sid: String) => resource.fromId(sid).isDefined
 
   private def _getRoutingHandler[Id](resource: ResourceRead[Id]) =
     (sid: String) => resource.fromId(sid).map { resource.get(_) }
 
   private def _listRoutingHandler[Id](resource: ResourceRead[Id]) =
-    () => Some(resource.list)
+    () => resource.list
 
   private def _putRoutingHandler[Id](resource: ResourceWrite[Id]) =
     (sid: String) => resource.fromId(sid).map { resource.write(_) }
@@ -67,7 +67,7 @@ class RestRouter(val controller: Controller) extends Router.Routes {
     (sid: String) => resource.fromId(sid).map { resource.update(_) }
 
   private def _postRoutingHandler[Id](resource: ResourceCreate) =
-    () => Some(resource.create)
+    () => resource.create
 
   private def _subRoutingHandler[Id](resource: SubResource[Id]) =
     (requestHeader: RequestHeader, subPrefix: String, sid: String, subPath: String) => {
@@ -86,6 +86,7 @@ class RestRouter(val controller: Controller) extends Router.Routes {
     }
   }
 
+  val verifyId = controllerAs[IdentifiedResource[_]].map( _verifyId(_)).getOrElse(_defaultVerifyId)
   val getRoutingHandler = controllerAs[ResourceRead[_]].map( _getRoutingHandler(_)).getOrElse(_defaultIdRoutingHandler)
   val listRoutingHandler = controllerAs[ResourceRead[_]].map( _listRoutingHandler(_)).getOrElse(_defaultRoutingHandler)
   val putRoutingHandler = controllerAs[ResourceWrite[_]].map( _putRoutingHandler(_)).getOrElse(_defaultIdRoutingHandler)
@@ -100,17 +101,23 @@ class RestRouter(val controller: Controller) extends Router.Routes {
         val path = requestHeader.path.drop(_prefix.length())
         val method = requestHeader.method
 
-        val res = (method, path) match {
-          case (_,        SubResourceExpression(subPrefix, id, subPath)) => subRoutingHandler(requestHeader, subPrefix, id, subPath)
-          case ("GET",    "" | "/")         => listRoutingHandler()
-          case ("GET",    IdExpression(id)) => getRoutingHandler(id)
-          case ("POST",   "" | "/")         => postRoutingHandler()
-          case ("PUT",    IdExpression(id)) => putRoutingHandler(id)
-          case ("DELETE", IdExpression(id)) => deleteRoutingHandler(id)
-          case ("PATCH",  IdExpression(id)) => patchRoutingHandler(id)
-          case _  => None
+        path match {
+          case SubResourceExpression(subPrefix, id, subPath) =>
+            subRoutingHandler(requestHeader, subPrefix, id, subPath).getOrElse(default(requestHeader))
+          case "" | "/" => method match {
+            case "GET"  => listRoutingHandler()
+            case "POST" => postRoutingHandler()
+            case _      => methodNotAllowed
+          }
+          case IdExpression(sid) => { method match {
+              case "GET"    => getRoutingHandler(sid)
+              case "PUT"    => putRoutingHandler(sid)
+              case "DELETE" => deleteRoutingHandler(sid)
+              case "PATCH"  => patchRoutingHandler(sid)
+              case _        => Some(methodNotAllowed)
+            }}.getOrElse(default(requestHeader))
+          case _  => default(requestHeader)
         }
-        res.getOrElse(default(requestHeader))
       } else {
         default(requestHeader)
       }
