@@ -67,18 +67,34 @@ trait SubResource[Id] extends IdentifiedResource[Id]{
   def subResources: Map[String, RestPath[Id]]
 }
 
-trait RestController[Id] extends Controller with IdentifiedResource[Id]
+trait RestController[Id] extends Controller
+                             with IdentifiedResource[Id]
 
-trait RestReadController[Id] extends Controller with IdentifiedResource[Id]
-                                                  with ResourceRead[Id]
+trait RestReadController[Id] extends Controller
+                                 with IdentifiedResource[Id]
+                                 with ResourceRead[Id]
 
-trait RestRWController[Id] extends Controller with IdentifiedResource[Id]
-                                               with ResourceCreate
-                                               with ResourceRead[Id]
-                                               with ResourceUpdate[Id]
+/**
+ * Read and write controller: implements GET, POST and PATCH for partial updates
+ */
+trait RestRwController[Id] extends Controller
+                               with IdentifiedResource[Id]
+                               with ResourceCreate
+                               with ResourceRead[Id]
+                               with ResourceUpdate[Id]
 
-trait RestCrudController[Id] extends Controller with IdentifiedResource[Id]
-                                                 with ResourceCreate
-                                                 with ResourceRead[Id]
-                                                 with ResourceDelete[Id]
-                                                 with ResourceWrite[Id]
+/**
+ * Same as RestRWController plus DELETE method
+ */
+trait RestRwdController[Id] extends RestRwController[Id]
+                                with ResourceDelete[Id]
+
+/**
+ * Classic rest controller: handle GET, POST, PUT and DELETE http methods
+ */
+trait RestCrudController[Id] extends Controller
+                                 with IdentifiedResource[Id]
+                                 with ResourceCreate
+                                 with ResourceRead[Id]
+                                 with ResourceDelete[Id]
+                                 with ResourceWrite[Id]
