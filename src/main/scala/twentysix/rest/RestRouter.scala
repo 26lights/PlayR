@@ -41,33 +41,39 @@ class RestRouter(val controller: Controller) extends Router.Routes {
   private val IdExpression = "^/([^/]+)/?$".r
   private val SubResourceExpression = "^(/([^/]+)/([^/]+)).*$".r
 
-  val f = (id:String) => println(id)
-  private var methodNotAllowed = Action { Results.MethodNotAllowed }
+  private def controllerAs[A: ClassTag]: Option[A] = {
+    if(classTag[A].runtimeClass.isInstance(controller)) {
+      Some(controller.asInstanceOf[A])
+    } else {
+      None
+    }
+  }
+
   private val _defaultVerifyId = (sid: String) => false
+  private def _verifyId[Id](resource: IdentifiedResource[Id]) =
+    (sid: String) => resource.fromId(sid).isDefined
+  val verifyId = controllerAs[IdentifiedResource[_]].map( _verifyId(_)).getOrElse(_defaultVerifyId)
+
+  private var methodNotAllowed = Action { Results.MethodNotAllowed }
   private val _defaultRoutingHandler = () => methodNotAllowed
   private val _defaultIdRoutingHandler = (sid: String) => if(verifyId(sid)) Some(methodNotAllowed) else None
   private val _defaultSubRoutingHandler = (requestHeader: RequestHeader, subPrefix: String, id: String, subPath: String) => None
 
-  private def _verifyId[Id](resource: IdentifiedResource[Id]) =
-    (sid: String) => resource.fromId(sid).isDefined
-
   private def _getRoutingHandler[Id](resource: ResourceRead[Id]) =
-    (sid: String) => resource.fromId(sid).map { resource.get(_) }
+    (sid: String) => resource.fromId(sid).map(resource.get)
 
-  private def _listRoutingHandler[Id](resource: ResourceRead[Id]) =
-    () => resource.list
+  private def _listRoutingHandler[Id](resource: ResourceRead[Id]) = resource.list _
 
   private def _putRoutingHandler[Id](resource: ResourceWrite[Id]) =
-    (sid: String) => resource.fromId(sid).map { resource.write(_) }
+    (sid: String) => resource.fromId(sid).map(resource.write)
 
   private def _deleteRoutingHandler[Id](resource: ResourceDelete[Id]) =
-    (sid: String) => resource.fromId(sid).map { resource.delete(_) }
+    (sid: String) => resource.fromId(sid).map(resource.delete)
 
   private def _patchRoutingHandler[Id](resource: ResourceUpdate[Id]) =
-    (sid: String) => resource.fromId(sid).map { resource.update(_) }
+    (sid: String) => resource.fromId(sid).map(resource.update)
 
-  private def _postRoutingHandler[Id](resource: ResourceCreate) =
-    () => resource.create
+  private def _postRoutingHandler[Id](resource: ResourceCreate) = resource.create _
 
   private def _subRoutingHandler[Id](resource: SubResource[Id]) =
     (requestHeader: RequestHeader, subPrefix: String, sid: String, subPath: String) => {
@@ -78,15 +84,6 @@ class RestRouter(val controller: Controller) extends Router.Routes {
       } yield res
     }
 
-  private def controllerAs[A: ClassTag]: Option[A] = {
-    if(classTag[A].runtimeClass.isInstance(controller)) {
-      Some(controller.asInstanceOf[A])
-    } else {
-      None
-    }
-  }
-
-  val verifyId = controllerAs[IdentifiedResource[_]].map( _verifyId(_)).getOrElse(_defaultVerifyId)
   val getRoutingHandler = controllerAs[ResourceRead[_]].map( _getRoutingHandler(_)).getOrElse(_defaultIdRoutingHandler)
   val listRoutingHandler = controllerAs[ResourceRead[_]].map( _listRoutingHandler(_)).getOrElse(_defaultRoutingHandler)
   val putRoutingHandler = controllerAs[ResourceWrite[_]].map( _putRoutingHandler(_)).getOrElse(_defaultIdRoutingHandler)
