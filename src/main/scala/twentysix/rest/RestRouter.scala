@@ -5,12 +5,12 @@ import play.api.mvc._
 import scala.runtime.AbstractPartialFunction
 import scala.reflect._
 
-abstract class RestAction[Id] {
+abstract class RestPath[Id] {
   def apply(id: Id, requestHeader: RequestHeader, prefix: String): Option[Handler]
 
 }
-object RestAction {
-  def apply[Id](f: Id => Controller) = new RestAction[Id] {
+object RestPath {
+  def apply[Id](f: Id => Controller) = new RestPath[Id] {
     def apply(id: Id, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
       Router.Include {
         val router = new RestRouter(f(id))
@@ -19,7 +19,7 @@ object RestAction {
       }.unapply(requestHeader)
     }
   }
-  def apply[Id](method: String, f: Id => EssentialAction) = new RestAction[Id] {
+  def apply[Id](method: String, f: Id => EssentialAction) = new RestPath[Id] {
     def apply(id: Id, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
         if (method==requestHeader.method) Some(f(id))
         else Some(Action { Results.MethodNotAllowed })

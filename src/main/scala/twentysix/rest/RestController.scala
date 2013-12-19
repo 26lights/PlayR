@@ -64,7 +64,7 @@ trait ResourceUpdate[Id] extends IdentifiedResource[Id]{
  * Define link to other resources accessible via a sub paths
  */
 trait SubResource[Id] extends IdentifiedResource[Id]{
-  def subResources: Map[String, RestAction[Id]]
+  def subResources: Map[String, RestPath[Id]]
 }
 
 trait RestController[Id] extends Controller with IdentifiedResource[Id]
