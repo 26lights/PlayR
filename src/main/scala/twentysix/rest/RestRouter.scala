@@ -57,8 +57,8 @@ class RestRouter(val controller: Controller) extends Router.Routes {
   private def _listRoutingHandler[Id](resource: ResourceRead[Id]) =
     () => Some(resource.list)
 
-  private def _putRoutingHandler[Id](resource: ResourceOverwrite[Id]) =
-    (sid: String) => resource.fromId(sid).map { resource.overwrite(_) }
+  private def _putRoutingHandler[Id](resource: ResourceWrite[Id]) =
+    (sid: String) => resource.fromId(sid).map { resource.write(_) }
 
   private def _deleteRoutingHandler[Id](resource: ResourceDelete[Id]) =
     (sid: String) => resource.fromId(sid).map { resource.delete(_) }
@@ -88,7 +88,7 @@ class RestRouter(val controller: Controller) extends Router.Routes {
 
   val getRoutingHandler = controllerAs[ResourceRead[_]].map( _getRoutingHandler(_)).getOrElse(_defaultIdRoutingHandler)
   val listRoutingHandler = controllerAs[ResourceRead[_]].map( _listRoutingHandler(_)).getOrElse(_defaultRoutingHandler)
-  val putRoutingHandler = controllerAs[ResourceOverwrite[_]].map( _putRoutingHandler(_)).getOrElse(_defaultIdRoutingHandler)
+  val putRoutingHandler = controllerAs[ResourceWrite[_]].map( _putRoutingHandler(_)).getOrElse(_defaultIdRoutingHandler)
   val patchRoutingHandler = controllerAs[ResourceUpdate[_]].map( _patchRoutingHandler(_)).getOrElse(_defaultIdRoutingHandler)
   val deleteRoutingHandler = controllerAs[ResourceDelete[_]].map( _deleteRoutingHandler(_)).getOrElse(_defaultIdRoutingHandler)
   val postRoutingHandler = controllerAs[ResourceCreate].map( _postRoutingHandler(_)).getOrElse(_defaultRoutingHandler)
@@ -125,7 +125,7 @@ class RestRouter(val controller: Controller) extends Router.Routes {
           case (SubResourceExpression(_, _, _), _, c:SubResource[_]) => true
           case (_, "GET", c:ResourceRead[_]) => true
           case (_, "POST", c:ResourceCreate) => true
-          case (IdExpression(_), "PUT", c: ResourceOverwrite[_]) => true
+          case (IdExpression(_), "PUT", c: ResourceWrite[_]) => true
           case (IdExpression(_), "DELETE", c:ResourceUpdate[_]) => true
           case (IdExpression(_), "PATCH", c:ResourceUpdate[_]) => true
           case _     => false

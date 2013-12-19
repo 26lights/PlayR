@@ -35,8 +35,8 @@ trait ResourceRead[Id] extends IdentifiedResource[Id]{
 /**
  * Respond to HTTP PUT method
  */
-trait ResourceOverwrite[Id] extends IdentifiedResource[Id]{
-  def overwrite(id: Id): EssentialAction
+trait ResourceWrite[Id] extends IdentifiedResource[Id]{
+  def write(id: Id): EssentialAction
 }
 
 /**
@@ -81,4 +81,4 @@ trait RestCrudController[Id] extends Controller with IdentifiedResource[Id]
                                                  with ResourceCreate
                                                  with ResourceRead[Id]
                                                  with ResourceDelete[Id]
-                                                 with ResourceOverwrite[Id]
+                                                 with ResourceWrite[Id]
