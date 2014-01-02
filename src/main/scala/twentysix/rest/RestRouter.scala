@@ -52,7 +52,7 @@ class RestRouter(val controller: Controller) extends Router.Routes {
   private val _defaultVerifyId = (sid: String) => false
   private def _verifyId[Id](resource: IdentifiedResource[Id]) =
     (sid: String) => resource.fromId(sid).isDefined
-  val verifyId = controllerAs[IdentifiedResource[_]].map( _verifyId(_)).getOrElse(_defaultVerifyId)
+  lazy val verifyId = controllerAs[IdentifiedResource[_]].map( _verifyId(_)).getOrElse(_defaultVerifyId)
 
   private var methodNotAllowed = Action { Results.MethodNotAllowed }
   private val _defaultRoutingHandler = () => methodNotAllowed
@@ -84,13 +84,13 @@ class RestRouter(val controller: Controller) extends Router.Routes {
       } yield res
     }
 
-  val getRoutingHandler = controllerAs[ResourceRead[_]].map( _getRoutingHandler(_)).getOrElse(_defaultIdRoutingHandler)
-  val listRoutingHandler = controllerAs[ResourceRead[_]].map( _listRoutingHandler(_)).getOrElse(_defaultRoutingHandler)
-  val putRoutingHandler = controllerAs[ResourceWrite[_]].map( _putRoutingHandler(_)).getOrElse(_defaultIdRoutingHandler)
-  val patchRoutingHandler = controllerAs[ResourceUpdate[_]].map( _patchRoutingHandler(_)).getOrElse(_defaultIdRoutingHandler)
-  val deleteRoutingHandler = controllerAs[ResourceDelete[_]].map( _deleteRoutingHandler(_)).getOrElse(_defaultIdRoutingHandler)
-  val postRoutingHandler = controllerAs[ResourceCreate].map( _postRoutingHandler(_)).getOrElse(_defaultRoutingHandler)
-  val subRoutingHandler = controllerAs[SubResource[_]].map( _subRoutingHandler(_)).getOrElse(_defaultSubRoutingHandler)
+  lazy val getRoutingHandler = controllerAs[ResourceRead[_]].map( _getRoutingHandler(_)).getOrElse(_defaultIdRoutingHandler)
+  lazy val listRoutingHandler = controllerAs[ResourceRead[_]].map( _listRoutingHandler(_)).getOrElse(_defaultRoutingHandler)
+  lazy val putRoutingHandler = controllerAs[ResourceWrite[_]].map( _putRoutingHandler(_)).getOrElse(_defaultIdRoutingHandler)
+  lazy val patchRoutingHandler = controllerAs[ResourceUpdate[_]].map( _patchRoutingHandler(_)).getOrElse(_defaultIdRoutingHandler)
+  lazy val deleteRoutingHandler = controllerAs[ResourceDelete[_]].map( _deleteRoutingHandler(_)).getOrElse(_defaultIdRoutingHandler)
+  lazy val postRoutingHandler = controllerAs[ResourceCreate].map( _postRoutingHandler(_)).getOrElse(_defaultRoutingHandler)
+  lazy val subRoutingHandler = controllerAs[SubResource[_]].map( _subRoutingHandler(_)).getOrElse(_defaultSubRoutingHandler)
 
   def routes = new AbstractPartialFunction[RequestHeader, Handler] {
     override def applyOrElse[A <: RequestHeader, B>: Handler]( requestHeader: A, default: A => B) = {
