@@ -2,6 +2,7 @@ package twentysix.rest
 
 import play.core.Router
 import play.api.mvc._
+import play.api.http.HeaderNames.ALLOW
 import scala.runtime.AbstractPartialFunction
 import scala.reflect._
 
@@ -10,7 +11,7 @@ abstract class RestPath[Id] {
 
 }
 object RestPath {
-  def apply[Id](f: Id => Controller) = new RestPath[Id] {
+  def apply[Id](f: Id => Controller with Resource) = new RestPath[Id] {
     def apply(id: Id, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
       Router.Include {
         val router = new RestRouter(f(id))
@@ -27,7 +28,7 @@ object RestPath {
   }
 }
 
-class RestRouter(val controller: Controller) extends Router.Routes {
+class RestRouter(val controller: Controller with Resource) extends Router.Routes {
 
   protected var _prefix: String =""
 
@@ -41,18 +42,15 @@ class RestRouter(val controller: Controller) extends Router.Routes {
   private val IdExpression = "^/([^/]+)/?$".r
   private val SubResourceExpression = "^(/([^/]+)/([^/]+)).*$".r
 
-  private def controllerAs[A: ClassTag]: Option[A] = {
-    if(classTag[A].runtimeClass.isInstance(controller)) {
-      Some(controller.asInstanceOf[A])
-    } else {
-      None
-    }
-  }
-
   private val _defaultVerifyId = (sid: String) => false
   private def _verifyId[Id](resource: IdentifiedResource[Id]) =
     (sid: String) => resource.fromId(sid).isDefined
-  lazy val verifyId = controllerAs[IdentifiedResource[_]].map( _verifyId(_)).getOrElse(_defaultVerifyId)
+    
+  lazy val verifyId = 
+    if(controller.caps contains ResourceCaps.Identity) 
+      _verifyId(controller.asInstanceOf[IdentifiedResource[_]]) 
+    else 
+      _defaultVerifyId
 
   private var methodNotAllowed = Action { Results.MethodNotAllowed }
   private val _defaultRoutingHandler = () => methodNotAllowed
@@ -84,14 +82,46 @@ class RestRouter(val controller: Controller) extends Router.Routes {
       } yield res
     }
 
-  lazy val getRoutingHandler = controllerAs[ResourceRead[_]].map( _getRoutingHandler(_)).getOrElse(_defaultIdRoutingHandler)
-  lazy val listRoutingHandler = controllerAs[ResourceRead[_]].map( _listRoutingHandler(_)).getOrElse(_defaultRoutingHandler)
-  lazy val putRoutingHandler = controllerAs[ResourceWrite[_]].map( _putRoutingHandler(_)).getOrElse(_defaultIdRoutingHandler)
-  lazy val patchRoutingHandler = controllerAs[ResourceUpdate[_]].map( _patchRoutingHandler(_)).getOrElse(_defaultIdRoutingHandler)
-  lazy val deleteRoutingHandler = controllerAs[ResourceDelete[_]].map( _deleteRoutingHandler(_)).getOrElse(_defaultIdRoutingHandler)
-  lazy val postRoutingHandler = controllerAs[ResourceCreate].map( _postRoutingHandler(_)).getOrElse(_defaultRoutingHandler)
-  lazy val subRoutingHandler = controllerAs[SubResource[_]].map( _subRoutingHandler(_)).getOrElse(_defaultSubRoutingHandler)
+  lazy val getRoutingHandler = if(controller.caps contains ResourceCaps.Read) 
+    _getRoutingHandler(controller.asInstanceOf[ResourceRead[_]]) else _defaultIdRoutingHandler
+  lazy val listRoutingHandler = if(controller.caps contains ResourceCaps.Read)
+    _listRoutingHandler(controller.asInstanceOf[ResourceRead[_]]) else _defaultRoutingHandler
+  lazy val putRoutingHandler = if(controller.caps contains ResourceCaps.Write)
+     _putRoutingHandler(controller.asInstanceOf[ResourceWrite[_]]) else _defaultIdRoutingHandler
+  lazy val patchRoutingHandler = if(controller.caps contains ResourceCaps.Update)
+    _patchRoutingHandler(controller.asInstanceOf[ResourceUpdate[_]]) else _defaultIdRoutingHandler
+  lazy val deleteRoutingHandler = if(controller.caps contains ResourceCaps.Delete)
+    _deleteRoutingHandler(controller.asInstanceOf[ResourceDelete[_]]) else _defaultIdRoutingHandler
+  lazy val postRoutingHandler = if(controller.caps contains ResourceCaps.Create)
+    _postRoutingHandler(controller.asInstanceOf[ResourceCreate]) else _defaultRoutingHandler
+  lazy val subRoutingHandler = if(controller.caps contains ResourceCaps.Child)
+    _subRoutingHandler(controller.asInstanceOf[SubResource[_]]) else _defaultSubRoutingHandler
 
+  private val ROOT_OPTIONS = Map(
+    ResourceCaps.Read   -> "GET", 
+    ResourceCaps.Create -> "POST"
+  ) 
+  private val ID_OPTIONS = Map(
+    ResourceCaps.Read   -> "GET", 
+    ResourceCaps.Delete -> "DELETE",
+    ResourceCaps.Write  -> "PUT",
+    ResourceCaps.Update -> "PATCH"
+  )
+  
+  def optionsRoutingHandler(map: Map[ResourceCaps.Value, String]) = Action {
+    val options = map.filterKeys( controller.caps contains _).values mkString ","
+    Results.Ok.withHeaders(ALLOW -> options)
+  }
+  
+  def rootOptionsRoutingHandler = optionsRoutingHandler(ROOT_OPTIONS)
+  def idOptionsRoutingHandler(sid: String) = {
+    if(verifyId(sid)){
+      Some(optionsRoutingHandler(ID_OPTIONS))
+    } else {
+      None
+    }
+  }
+    
   def routes = new AbstractPartialFunction[RequestHeader, Handler] {
     override def applyOrElse[A <: RequestHeader, B>: Handler]( requestHeader: A, default: A => B) = {
       if(requestHeader.path.startsWith(_prefix)) {
@@ -102,15 +132,17 @@ class RestRouter(val controller: Controller) extends Router.Routes {
           case SubResourceExpression(subPrefix, id, subPath) =>
             subRoutingHandler(requestHeader, subPrefix, id, subPath).getOrElse(default(requestHeader))
           case "" | "/" => method match {
-            case "GET"  => listRoutingHandler()
-            case "POST" => postRoutingHandler()
-            case _      => methodNotAllowed
+            case "GET"     => listRoutingHandler()
+            case "POST"    => postRoutingHandler()
+            case "OPTIONS" => rootOptionsRoutingHandler()
+            case _         => methodNotAllowed
           }
           case IdExpression(sid) => { method match {
               case "GET"    => getRoutingHandler(sid)
               case "PUT"    => putRoutingHandler(sid)
               case "DELETE" => deleteRoutingHandler(sid)
               case "PATCH"  => patchRoutingHandler(sid)
+              case "OPTIONS" => idOptionsRoutingHandler(sid)
               case _        => Some(methodNotAllowed)
             }}.getOrElse(default(requestHeader))
           case _  => default(requestHeader)
@@ -125,13 +157,13 @@ class RestRouter(val controller: Controller) extends Router.Routes {
         val path = requestHeader.path.drop(_prefix.length())
         val method = requestHeader.method
 
-        (path, method, controller) match {
-          case (SubResourceExpression(_, _, _), _, c:SubResource[_]) => true
-          case (_, "GET", c:ResourceRead[_]) => true
-          case (_, "POST", c:ResourceCreate) => true
-          case (IdExpression(_), "PUT", c: ResourceWrite[_]) => true
-          case (IdExpression(_), "DELETE", c:ResourceUpdate[_]) => true
-          case (IdExpression(_), "PATCH", c:ResourceUpdate[_]) => true
+        (path, method, controller.caps) match {
+          case (SubResourceExpression(_, _, _), _, caps) if caps contains ResourceCaps.Child => true
+          case (_, "GET", caps) if caps contains ResourceCaps.Read => true
+          case (_, "POST", caps) if caps contains ResourceCaps.Create => true
+          case (IdExpression(_), "PUT", caps) if caps contains ResourceCaps.Write => true
+          case (IdExpression(_), "DELETE", caps) if caps contains ResourceCaps.Delete => true
+          case (IdExpression(_), "PATCH", caps) if caps contains ResourceCaps.Update => true
           case _     => false
         }
       } else {
