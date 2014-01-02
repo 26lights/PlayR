@@ -8,10 +8,21 @@ import play.api.mvc.Handler
 import play.api.mvc.Controller
 import play.api.Logger
 
+object ResourceCaps extends Enumeration {
+  type ResourceCaps = Value
+  val Identity, Read, Write, Create, Delete, Update, Child = Value
+}
+
+trait Resource{
+  var caps = ResourceCaps.ValueSet.empty
+}
+
 /**
  * Define the conversion from an url id to a real object
  */
-trait IdentifiedResource[Id] {
+trait IdentifiedResource[Id] extends Resource{
+  caps += ResourceCaps.Identity
+  
   def toNumber[N](id: String, f: String => N): Option[N] = {
     import scala.util.control.Exception._
     catching(classOf[NumberFormatException]) opt f(id)
@@ -27,7 +38,9 @@ trait IdentifiedResource[Id] {
 /**
  * Respond to HTTP GET method
  */
-trait ResourceRead[Id] extends IdentifiedResource[Id]{
+trait ResourceRead[Id] extends IdentifiedResource[Id] {
+  caps+=ResourceCaps.Read
+
   def get(id: Id): EssentialAction
   def list(): EssentialAction
 }
@@ -36,13 +49,17 @@ trait ResourceRead[Id] extends IdentifiedResource[Id]{
  * Respond to HTTP PUT method
  */
 trait ResourceWrite[Id] extends IdentifiedResource[Id]{
+  caps+=ResourceCaps.Write
+
   def write(id: Id): EssentialAction
 }
 
 /**
  * Respond to HTTP POST method
  */
-trait ResourceCreate {
+trait ResourceCreate extends Resource{
+  caps+=ResourceCaps.Create
+
   def create(): EssentialAction
 }
 
@@ -50,6 +67,8 @@ trait ResourceCreate {
  * Respond to HTTP DELETE method
  */
 trait ResourceDelete[Id] extends IdentifiedResource[Id]{
+  caps+=ResourceCaps.Delete
+
   def delete(id: Id): EssentialAction
 }
 
@@ -57,6 +76,8 @@ trait ResourceDelete[Id] extends IdentifiedResource[Id]{
  * Respond to HTTP PATCH method
  */
 trait ResourceUpdate[Id] extends IdentifiedResource[Id]{
+  caps+=ResourceCaps.Update
+
   def update(id: Id): EssentialAction
 }
 
@@ -64,6 +85,8 @@ trait ResourceUpdate[Id] extends IdentifiedResource[Id]{
  * Define link to other resources accessible via a sub paths
  */
 trait SubResource[Id] extends IdentifiedResource[Id]{
+  caps+=ResourceCaps.Child
+
   def subResources: Map[String, RestPath[Id]]
 }
 
