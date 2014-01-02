@@ -11,6 +11,14 @@ abstract class RestPath[Id] {
 
 }
 object RestPath {
+  def apply[Id](router: RestRouter) = new RestPath[Id] {
+    def apply(id: Id, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
+      Router.Include {
+        router.setPrefix(prefix)
+        router
+      }.unapply(requestHeader)
+    }
+  }
   def apply[Id](f: Id => Controller with Resource) = new RestPath[Id] {
     def apply(id: Id, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
       Router.Include {
