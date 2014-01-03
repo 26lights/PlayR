@@ -4,7 +4,6 @@ import play.core.Router
 import play.api.mvc._
 import play.api.http.HeaderNames.ALLOW
 import scala.runtime.AbstractPartialFunction
-import scala.reflect._
 
 abstract class RestPath[Id] {
   def apply(id: Id, requestHeader: RequestHeader, prefix: String): Option[Handler]
