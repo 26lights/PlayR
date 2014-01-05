@@ -15,6 +15,7 @@ object ResourceCaps extends Enumeration {
 
 trait Resource{
   var caps = ResourceCaps.ValueSet.empty
+  def name: String
 }
 
 /**

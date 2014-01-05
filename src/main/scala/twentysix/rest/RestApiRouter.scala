@@ -5,8 +5,14 @@ import play.api.mvc._
 import scala.runtime.AbstractPartialFunction
 import play.api.Logger
 
-class RestApiRouter(val routeMap: Map[String, Router.Routes]) extends Router.Routes {
+class RestApiRouter(val routeMap: Map[String, RestRouter]) extends RestRouter{
   protected var _prefix: String =""
+
+  def routeResources = routeMap.flatMap {
+    case (path, router) => router.routeResources.map {
+      case(subPath, resource) => (s"$prefix/${path}${subPath}" -> resource) 
+    }
+  }
 
   def setPrefix(newPrefix: String) = {
     _prefix = newPrefix
@@ -54,5 +60,5 @@ class RestApiRouter(val routeMap: Map[String, Router.Routes]) extends Router.Rou
 }
 
 object RestApiRouter{
-  def apply(elems: (String, Router.Routes)*) = new RestApiRouter(Map(elems: _*))
+  def apply(elems: (String, RestRouter)*) = new RestApiRouter(Map(elems: _*))
 }
