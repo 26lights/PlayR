@@ -7,12 +7,23 @@ import play.api.libs.json._
 import twentysix.core.api.mvc.JsonAction
 import play.api.Logger
 
-case class SwaggerApi(path: String, description: String)
+case class SwaggerResource(path: String, description: String)
+object SwaggerResource {
+  implicit val jsonFormat = Json.format[SwaggerResource]
+}
+
+case class SwaggerOperation(method: String, nickname: String, summary: String, parameters: Seq[String]= Seq(), `type`: String="string")
+object SwaggerOperation {
+  implicit val jsonFormat = Json.format[SwaggerOperation]
+  def simple(method: String, nickname: String) = new SwaggerOperation(method, nickname, nickname)
+}
+
+case class SwaggerApi(path: String, description: String, operations: Traversable[SwaggerOperation])
 object SwaggerApi {
   implicit val jsonFormat = Json.format[SwaggerApi]
 }
 
-class SwaggerRestDocumentation(val restApi: RestRouter) extends Router.Routes {
+class SwaggerRestDocumentation(val restApi: RestRouter, val apiVersion: String="1.0") extends Router.Routes {
   protected var _prefix: String =""
 
   def setPrefix(newPrefix: String) = {
@@ -25,12 +36,39 @@ class SwaggerRestDocumentation(val restApi: RestRouter) extends Router.Routes {
   private val SubPathExpression = "^(/([^/]+)).*$".r
 
   def apiList = restApi.routeResources.map {
-    case (path, resource) => SwaggerApi(path, resource.name)
+    case (path, resource) => SwaggerResource(path, resource.name)
   }
-  
+
+  def operationList(path: String, resource: Resource) = {
+    var res = List[SwaggerApi]()
+    var ops = resource.caps.flatMap{ caps =>
+      caps match {
+        case ResourceCaps.Read   => Some(SwaggerOperation.simple("GET", "List"))
+        case ResourceCaps.Create => Some(SwaggerOperation.simple("POST", "Create"))
+        case _ => None
+      }
+    }
+    if(!ops.isEmpty)
+      res = new SwaggerApi(path, "Generic operations", ops) :: res
+
+    ops = resource.caps.flatMap{ caps =>
+      caps match {
+        case ResourceCaps.Read   => Some(SwaggerOperation.simple("GET", "Get"))
+        case ResourceCaps.Write  => Some(SwaggerOperation.simple("PUT", "Write"))
+        case ResourceCaps.Update => Some(SwaggerOperation.simple("PATCH", "Update"))
+        case ResourceCaps.Delete => Some(SwaggerOperation.simple("DELETE", "Delete"))
+        case _ => None
+      }
+    }
+    if(!ops.isEmpty)
+      res = new SwaggerApi(path+"/{id}", "Operations on identified resource", ops) :: res
+
+    res
+  }
+
   def resourceListing = Action {
     val res = Json.obj(
-        "apiVersion" -> "0.2",
+        "apiVersion" -> apiVersion,
         "swaggerVersion" -> "1.2",
         "apis" -> apiList
     )
@@ -41,28 +79,45 @@ class SwaggerRestDocumentation(val restApi: RestRouter) extends Router.Routes {
     Results.Ok(views.html.swagger(this.prefix+".json"))
   }
 
+  def resourceDesc(path: String, resource: Resource) = Action {
+    val res = Json.obj(
+        "apiVersion" -> apiVersion,
+        "swaggerVersion" -> "1.2",
+        "basePath" -> restApi.prefix,
+        "resourcePath" -> path,
+        "apis" -> operationList(path, resource)
+    )
+    Results.Ok(Json.toJson(res))
+  }
+
+  private val ApiListing = "^\\.json(/.*)$".r
+
   def routes = new AbstractPartialFunction[RequestHeader, Handler] {
     override def applyOrElse[A <: RequestHeader, B>: Handler]( requestHeader: A, default: A => B) = {
       if(requestHeader.path.startsWith(_prefix)) {
         val path = requestHeader.path.drop(_prefix.length())
-        Logger.debug(s"path=$path")
         path match {
-          case ".json" => resourceListing
-          case ""|"/"  => renderSwaggerUi
-          case _       => default(requestHeader) 
+          case ".json"         => resourceListing
+          case ""|"/"          => renderSwaggerUi
+          case ApiListing
+
+
+
+          (api) => restApi.routeResources.get(api).map(resourceDesc(api, _)).getOrElse(default(requestHeader))
+          case _               => default(requestHeader)
         }
       } else {
         default(requestHeader)
       }
     }
-    
+
     def isDefinedAt(requestHeader: RequestHeader): Boolean = {
       if(requestHeader.path.startsWith(_prefix)) {
         val path = requestHeader.path.drop(_prefix.length())
-  
+
         path match {
-          case ""|"/" => true 
-          case _ => false
+          case ""|"/" => true
+          case _      => false
         }
       } else {
         false

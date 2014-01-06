@@ -10,7 +10,7 @@ class RestApiRouter(val routeMap: Map[String, RestRouter]) extends RestRouter{
 
   def routeResources = routeMap.flatMap {
     case (path, router) => router.routeResources.map {
-      case(subPath, resource) => (s"$prefix/${path}${subPath}" -> resource) 
+      case(subPath, resource) => (s"/${path}${subPath}" -> resource)
     }
   }
 
@@ -37,17 +37,17 @@ class RestApiRouter(val routeMap: Map[String, RestRouter]) extends RestRouter{
               }.unapply(requestHeader)
             }.getOrElse(default(requestHeader))
           }
-          case _ => default(requestHeader) 
+          case _ => default(requestHeader)
         }
       } else {
         default(requestHeader)
       }
     }
-    
+
     def isDefinedAt(requestHeader: RequestHeader): Boolean = {
       if(requestHeader.path.startsWith(_prefix)) {
         val path = requestHeader.path.drop(_prefix.length())
-  
+
         path match {
           case SubPathExpression(subPath) if routeMap contains subPath => true
           case _ => false
