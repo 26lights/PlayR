@@ -62,7 +62,7 @@ class SwaggerRestDocumentation(val restApi: RestRouter, val apiVersion: String="
       }
     }
     if(!ops.isEmpty)
-      res = new SwaggerApi(path+"/{id}", "Operations on identified resource", ops) :: res
+      res = new SwaggerApi(path+"/:id", "Operations on identified resource", ops) :: res
 
     res
   }
