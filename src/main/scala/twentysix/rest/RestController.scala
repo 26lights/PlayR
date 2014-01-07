@@ -42,7 +42,7 @@ trait IdentifiedResource[Id] extends Resource{
 trait ResourceRead[Id] extends IdentifiedResource[Id] {
   caps+=ResourceCaps.Read
 
-  def get(id: Id): EssentialAction
+  def read(id: Id): EssentialAction
   def list(): EssentialAction
 }
 

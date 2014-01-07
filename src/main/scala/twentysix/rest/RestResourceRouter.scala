@@ -65,7 +65,7 @@ class RestResourceRouter(val controller: Controller with Resource) extends RestR
   private val _defaultSubRoutingHandler = (requestHeader: RequestHeader, subPrefix: String, id: String, subPath: String) => None
 
   private def _getRoutingHandler[Id](resource: ResourceRead[Id]) =
-    (sid: String) => resource.fromId(sid).map(resource.get)
+    (sid: String) => resource.fromId(sid).map(resource.read)
 
   private def _listRoutingHandler[Id](resource: ResourceRead[Id]) = resource.list _
 
