@@ -6,6 +6,7 @@ import play.api.mvc._
 import play.api.libs.json._
 import twentysix.core.api.mvc.JsonAction
 import play.api.Logger
+import scala.reflect.runtime.universe._
 
 case class SwaggerResource(path: String, description: String)
 object SwaggerResource {
@@ -36,15 +37,15 @@ class SwaggerRestDocumentation(val restApi: RestRouter, val apiVersion: String="
   private val SubPathExpression = "^(/([^/]+)).*$".r
 
   def apiList = restApi.routeResources.map {
-    case (path, resource) => SwaggerResource(path, resource.name)
+    case (path, resource) => SwaggerResource(path, resource.getClass.getName)
   }
 
   def operationList(path: String, resource: Resource) = {
     var res = List[SwaggerApi]()
     var ops = resource.caps.flatMap{ caps =>
       caps match {
-        case ResourceCaps.Read   => Some(SwaggerOperation.simple("GET", "List"))
-        case ResourceCaps.Create => Some(SwaggerOperation.simple("POST", "Create"))
+        case ResourceCaps.Read   => Some(SwaggerOperation.simple("GET", s"List ${resource.name}"))
+        case ResourceCaps.Create => Some(SwaggerOperation.simple("POST", s"Create ${resource.name}"))
         case _ => None
       }
     }
@@ -53,10 +54,10 @@ class SwaggerRestDocumentation(val restApi: RestRouter, val apiVersion: String="
 
     ops = resource.caps.flatMap{ caps =>
       caps match {
-        case ResourceCaps.Read   => Some(SwaggerOperation.simple("GET", "Get"))
-        case ResourceCaps.Write  => Some(SwaggerOperation.simple("PUT", "Write"))
-        case ResourceCaps.Update => Some(SwaggerOperation.simple("PATCH", "Update"))
-        case ResourceCaps.Delete => Some(SwaggerOperation.simple("DELETE", "Delete"))
+        case ResourceCaps.Read   => Some(SwaggerOperation.simple("GET", s"Get ${resource.name}"))
+        case ResourceCaps.Write  => Some(SwaggerOperation.simple("PUT", s"Write ${resource.name}"))
+        case ResourceCaps.Update => Some(SwaggerOperation.simple("PATCH", s"Update ${resource.name}"))
+        case ResourceCaps.Delete => Some(SwaggerOperation.simple("DELETE", s"Delete ${resource.name}"))
         case _ => None
       }
     }
@@ -99,11 +100,7 @@ class SwaggerRestDocumentation(val restApi: RestRouter, val apiVersion: String="
         path match {
           case ".json"         => resourceListing
           case ""|"/"          => renderSwaggerUi
-          case ApiListing
-
-
-
-          (api) => restApi.routeResources.get(api).map(resourceDesc(api, _)).getOrElse(default(requestHeader))
+          case ApiListing(api) => restApi.routeResources.get(api).map(resourceDesc(api, _)).getOrElse(default(requestHeader))
           case _               => default(requestHeader)
         }
       } else {
