@@ -5,21 +5,21 @@ import play.api.mvc._
 import play.api.http.HeaderNames.ALLOW
 import scala.runtime.AbstractPartialFunction
 
-abstract class RestPath[Id] {
-  def apply(id: Id, requestHeader: RequestHeader, prefix: String): Option[Handler]
+abstract class RestPath[R] {
+  def apply(id: R, requestHeader: RequestHeader, prefix: String): Option[Handler]
 
 }
 object RestPath {
-  def apply[Id](router: RestResourceRouter) = new RestPath[Id] {
-    def apply(id: Id, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
+  def apply[R](router: RestResourceRouter) = new RestPath[R] {
+    def apply(id: R, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
       Router.Include {
         router.setPrefix(prefix)
         router
       }.unapply(requestHeader)
     }
   }
-  def apply[Id](f: Id => Controller with Resource) = new RestPath[Id] {
-    def apply(id: Id, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
+  def apply[R](f: R => Controller with Resource) = new RestPath[R] {
+    def apply(id: R, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
       Router.Include {
         val router = new RestResourceRouter(f(id))
         router.setPrefix(prefix)
@@ -27,8 +27,8 @@ object RestPath {
       }.unapply(requestHeader)
     }
   }
-  def apply[Id](method: String, f: Id => EssentialAction) = new RestPath[Id] {
-    def apply(id: Id, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
+  def apply[R](method: String, f: R => EssentialAction) = new RestPath[R] {
+    def apply(id: R, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
         if (method==requestHeader.method) Some(f(id))
         else Some(Action { Results.MethodNotAllowed })
     }
@@ -50,13 +50,13 @@ class RestResourceRouter(val controller: Controller with Resource) extends RestR
   private val SubResourceExpression = "^(/([^/]+)/([^/]+)).*$".r
 
   private val _defaultVerifyId = (sid: String) => false
-  private def _verifyId[Id](resource: IdentifiedResource[Id]) =
+  private def _verifyId[R](resource: IdentifiedResource[R]) =
     (sid: String) => resource.fromId(sid).isDefined
-    
-  lazy val verifyId = 
-    if(controller.caps contains ResourceCaps.Identity) 
-      _verifyId(controller.asInstanceOf[IdentifiedResource[_]]) 
-    else 
+
+  lazy val verifyId =
+    if(controller.caps contains ResourceCaps.Identity)
+      _verifyId(controller.asInstanceOf[IdentifiedResource[_]])
+    else
       _defaultVerifyId
 
   private var methodNotAllowed = Action { Results.MethodNotAllowed }
@@ -64,23 +64,23 @@ class RestResourceRouter(val controller: Controller with Resource) extends RestR
   private val _defaultIdRoutingHandler = (sid: String) => if(verifyId(sid)) Some(methodNotAllowed) else None
   private val _defaultSubRoutingHandler = (requestHeader: RequestHeader, subPrefix: String, id: String, subPath: String) => None
 
-  private def _getRoutingHandler[Id](resource: ResourceRead[Id]) =
+  private def _getRoutingHandler[R](resource: ResourceRead[R]) =
     (sid: String) => resource.fromId(sid).map(resource.read)
 
-  private def _listRoutingHandler[Id](resource: ResourceRead[Id]) = resource.list _
+  private def _listRoutingHandler[R](resource: ResourceRead[R]) = resource.list _
 
-  private def _putRoutingHandler[Id](resource: ResourceWrite[Id]) =
+  private def _putRoutingHandler[R](resource: ResourceWrite[R]) =
     (sid: String) => resource.fromId(sid).map(resource.write)
 
-  private def _deleteRoutingHandler[Id](resource: ResourceDelete[Id]) =
+  private def _deleteRoutingHandler[R](resource: ResourceDelete[R]) =
     (sid: String) => resource.fromId(sid).map(resource.delete)
 
-  private def _patchRoutingHandler[Id](resource: ResourceUpdate[Id]) =
+  private def _patchRoutingHandler[R](resource: ResourceUpdate[R]) =
     (sid: String) => resource.fromId(sid).map(resource.update)
 
-  private def _postRoutingHandler[Id](resource: ResourceCreate) = resource.create _
+  private def _postRoutingHandler[R](resource: ResourceCreate) = resource.create _
 
-  private def _subRoutingHandler[Id](resource: SubResource[Id]) =
+  private def _subRoutingHandler[R](resource: SubResource[R]) =
     (requestHeader: RequestHeader, subPrefix: String, sid: String, subPath: String) => {
       for {
         action <- resource.subResources.get(subPath)
@@ -89,7 +89,7 @@ class RestResourceRouter(val controller: Controller with Resource) extends RestR
       } yield res
     }
 
-  lazy val getRoutingHandler = if(controller.caps contains ResourceCaps.Read) 
+  lazy val getRoutingHandler = if(controller.caps contains ResourceCaps.Read)
     _getRoutingHandler(controller.asInstanceOf[ResourceRead[_]]) else _defaultIdRoutingHandler
   lazy val listRoutingHandler = if(controller.caps contains ResourceCaps.Read)
     _listRoutingHandler(controller.asInstanceOf[ResourceRead[_]]) else _defaultRoutingHandler
@@ -105,21 +105,21 @@ class RestResourceRouter(val controller: Controller with Resource) extends RestR
     _subRoutingHandler(controller.asInstanceOf[SubResource[_]]) else _defaultSubRoutingHandler
 
   private val ROOT_OPTIONS = Map(
-    ResourceCaps.Read   -> "GET", 
+    ResourceCaps.Read   -> "GET",
     ResourceCaps.Create -> "POST"
-  ) 
+  )
   private val ID_OPTIONS = Map(
-    ResourceCaps.Read   -> "GET", 
+    ResourceCaps.Read   -> "GET",
     ResourceCaps.Delete -> "DELETE",
     ResourceCaps.Write  -> "PUT",
     ResourceCaps.Update -> "PATCH"
   )
-  
+
   def optionsRoutingHandler(map: Map[ResourceCaps.Value, String]) = Action {
     val options = map.filterKeys( controller.caps contains _).values mkString ","
     Results.Ok.withHeaders(ALLOW -> options)
   }
-  
+
   def rootOptionsRoutingHandler = optionsRoutingHandler(ROOT_OPTIONS)
   def idOptionsRoutingHandler(sid: String) = {
     if(verifyId(sid)){

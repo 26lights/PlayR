@@ -21,9 +21,9 @@ trait Resource{
 /**
  * Define the conversion from an url id to a real object
  */
-trait IdentifiedResource[Id] extends Resource{
+trait IdentifiedResource[R] extends Resource{
   caps += ResourceCaps.Identity
-  
+
   def toNumber[N](id: String, f: String => N): Option[N] = {
     import scala.util.control.Exception._
     catching(classOf[NumberFormatException]) opt f(id)
@@ -32,27 +32,27 @@ trait IdentifiedResource[Id] extends Resource{
   def toInt(id: String) = toNumber(id, _.toInt)
   def toLong(id: String) = toNumber(id, _.toLong)
 
-  def fromId(id: String): Option[Id]
+  def fromId(id: String): Option[R]
 
 }
 
 /**
  * Respond to HTTP GET method
  */
-trait ResourceRead[Id] extends IdentifiedResource[Id] {
+trait ResourceRead[R] extends IdentifiedResource[R] {
   caps+=ResourceCaps.Read
 
-  def read(id: Id): EssentialAction
+  def read(id: R): EssentialAction
   def list(): EssentialAction
 }
 
 /**
  * Respond to HTTP PUT method
  */
-trait ResourceWrite[Id] extends IdentifiedResource[Id]{
+trait ResourceWrite[R] extends IdentifiedResource[R]{
   caps+=ResourceCaps.Write
 
-  def write(id: Id): EssentialAction
+  def write(id: R): EssentialAction
 }
 
 /**
@@ -67,58 +67,58 @@ trait ResourceCreate extends Resource{
 /**
  * Respond to HTTP DELETE method
  */
-trait ResourceDelete[Id] extends IdentifiedResource[Id]{
+trait ResourceDelete[R] extends IdentifiedResource[R]{
   caps+=ResourceCaps.Delete
 
-  def delete(id: Id): EssentialAction
+  def delete(id: R): EssentialAction
 }
 
 /**
  * Respond to HTTP PATCH method
  */
-trait ResourceUpdate[Id] extends IdentifiedResource[Id]{
+trait ResourceUpdate[R] extends IdentifiedResource[R]{
   caps+=ResourceCaps.Update
 
-  def update(id: Id): EssentialAction
+  def update(id: R): EssentialAction
 }
 
 /**
  * Define link to other resources accessible via a sub paths
  */
-trait SubResource[Id] extends IdentifiedResource[Id]{
+trait SubResource[R] extends IdentifiedResource[R]{
   caps+=ResourceCaps.Child
 
-  def subResources: Map[String, RestPath[Id]]
+  def subResources: Map[String, RestPath[R]]
 }
 
-trait RestController[Id] extends Controller
-                             with IdentifiedResource[Id]
+trait RestController[R] extends Controller
+                             with IdentifiedResource[R]
 
-trait RestReadController[Id] extends Controller
-                                 with IdentifiedResource[Id]
-                                 with ResourceRead[Id]
+trait RestReadController[R] extends Controller
+                                 with IdentifiedResource[R]
+                                 with ResourceRead[R]
 
 /**
  * Read and write controller: implements GET, POST and PATCH for partial updates
  */
-trait RestRwController[Id] extends Controller
-                               with IdentifiedResource[Id]
+trait RestRwController[R] extends Controller
+                               with IdentifiedResource[R]
                                with ResourceCreate
-                               with ResourceRead[Id]
-                               with ResourceUpdate[Id]
+                               with ResourceRead[R]
+                               with ResourceUpdate[R]
 
 /**
  * Same as RestRWController plus DELETE method
  */
-trait RestRwdController[Id] extends RestRwController[Id]
-                                with ResourceDelete[Id]
+trait RestRwdController[R] extends RestRwController[R]
+                                with ResourceDelete[R]
 
 /**
  * Classic rest controller: handle GET, POST, PUT and DELETE http methods
  */
-trait RestCrudController[Id] extends Controller
-                                 with IdentifiedResource[Id]
+trait RestCrudController[R] extends Controller
+                                 with IdentifiedResource[R]
                                  with ResourceCreate
-                                 with ResourceRead[Id]
-                                 with ResourceDelete[Id]
-                                 with ResourceWrite[Id]
+                                 with ResourceRead[R]
+                                 with ResourceDelete[R]
+                                 with ResourceWrite[R]
