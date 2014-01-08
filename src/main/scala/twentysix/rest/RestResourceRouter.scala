@@ -35,33 +35,41 @@ object RestPath {
   }
 }
 
-class ResourceWrapperGenerator[R, C<:Controller with Resource](val controller: C) {
+class ResourceWrapperGenerator[C<:Controller with Resource](val controller: C) {
   private var methodNotAllowed = Action { Results.MethodNotAllowed }
 
   def name = controller.name
 
   val fromId = if(controller.caps contains ResourceCaps.Identity)
-    (sub: C, sid: String) => sub.asInstanceOf[IdentifiedResource[R]].fromId(sid)
+    (sub: C, sid: String) => sub.asInstanceOf[IdentifiedResource[_]].fromId(sid)
     else (sub: C, sid: String) => None
 
-  val read = if(controller.caps contains ResourceCaps.Read)
-    (sub: C, id: R) => sub.asInstanceOf[ResourceRead[R]].read(id)
-    else (sub: C, id: R) => methodNotAllowed
+  def _read[R](sub: C, sid: String) = {
+    val ctrl=sub.asInstanceOf[ResourceRead[R]]
+    ctrl.fromId(sid).map(ctrl.read(_))
+  }
+  val read = if(controller.caps contains ResourceCaps.Read) _read _ else (sub: C, sid: String) => Some(methodNotAllowed)
 
-  val write = if(controller.caps contains ResourceCaps.Write)
-    (sub: C, id: R) => sub.asInstanceOf[ResourceWrite[R]].write(id)
-    else (sub: C, id: R) => methodNotAllowed
+  def _write[R](sub: C, sid: String) = {
+    val ctrl=sub.asInstanceOf[ResourceWrite[R]]
+    ctrl.fromId(sid).map(ctrl.write(_))
+  }
+  val write = if(controller.caps contains ResourceCaps.Write) _write _ else (sub: C, sid: String) => Some(methodNotAllowed)
 
-  val update = if(controller.caps contains ResourceCaps.Update)
-    (sub: C, id: R) => sub.asInstanceOf[ResourceUpdate[R]].update(id)
-    else (sub: C, id: R) => methodNotAllowed
+  def _update[R](sub: C, sid: String) = {
+    val ctrl=sub.asInstanceOf[ResourceUpdate[R]]
+    ctrl.fromId(sid).map(ctrl.update(_))
+  }
+  val update = if(controller.caps contains ResourceCaps.Update) _update _ else (sub: C, sid: String) => Some(methodNotAllowed)
 
-  val delete = if(controller.caps contains ResourceCaps.Delete)
-    (sub: C, id: R) => sub.asInstanceOf[ResourceDelete[R]].delete(id)
-    else (sub: C, id: R) => methodNotAllowed
+  def _delete[R](sub: C, sid: String) = {
+    val ctrl=sub.asInstanceOf[ResourceDelete[R]]
+    ctrl.fromId(sid).map(ctrl.delete(_))
+  }
+  val delete = if(controller.caps contains ResourceCaps.Delete) _delete _  else (sub: C, sid: String) => Some(methodNotAllowed)
 
   val list = if(controller.caps contains ResourceCaps.Read)
-    (sub: C) => sub.asInstanceOf[ResourceRead[R]].list() else (sub: C) => methodNotAllowed
+    (sub: C) => sub.asInstanceOf[ResourceRead[_]].list() else (sub: C) => methodNotAllowed
 
   val create = if(controller.caps contains ResourceCaps.Create)
     (sub: C) => sub.asInstanceOf[ResourceCreate].create() else (sub: C) => methodNotAllowed
@@ -70,27 +78,20 @@ class ResourceWrapperGenerator[R, C<:Controller with Resource](val controller: C
     new ResourceWrapper (fromId, read, write, update, delete, list, create, subController)
   }
 
-  class ResourceWrapper(val fromIdImpl: (C, String) => Option[R],
-                        val readImpl: (C, R) => EssentialAction,
-                        val writeImpl: (C, R) => EssentialAction,
-                        val updateImpl: (C, R) => EssentialAction,
-                        val deleteImpl:(C, R) => EssentialAction,
+  class ResourceWrapper(val fromIdImpl: (C, String) => Option[_],
+                        val readImpl: (C, String) => Option[EssentialAction],
+                        val writeImpl: (C, String) => Option[EssentialAction],
+                        val updateImpl: (C, String) => Option[EssentialAction],
+                        val deleteImpl:(C, String) => Option[EssentialAction],
                         val listImpl: (C) => EssentialAction,
                         val createImpl: (C) => EssentialAction,
-                        val subController: C)
-      extends Resource
-      with IdentifiedResource[R]
-      with ResourceCreate
-      with ResourceRead[R]
-      with ResourceDelete[R]
-      with ResourceWrite[R]
-      with ResourceUpdate[R] {
+                        val subController: C) {
     def name = subController.name
     def fromId(sid: String) = fromIdImpl(subController, sid)
-    def read(id: R) = readImpl(subController, id)
-    def write(id: R) = writeImpl(subController, id)
-    def update(id: R) = updateImpl(subController, id)
-    def delete(id: R) = deleteImpl(subController, id)
+    def read(sid: String) = readImpl(subController, sid)
+    def write(sid: String) = writeImpl(subController, sid)
+    def update(sid: String) = updateImpl(subController, sid)
+    def delete(sid: String) = deleteImpl(subController, sid)
     def create() = createImpl(subController)
     def list() = listImpl(subController)
   }
@@ -163,18 +164,14 @@ class RestResourceRouter(val controller: Controller with Resource) extends RestR
             case "OPTIONS" => rootOptionsRoutingHandler()
             case _         => methodNotAllowed
           }
-          case IdExpression(sid) => {
-            resourceWrapper.fromId(sid).map { res =>
-              method match {
-                case "GET"    => resourceWrapper.read(res)
-                case "PUT"    => resourceWrapper.write(res)
-                case "DELETE" => resourceWrapper.delete(res)
-                case "PATCH"  => resourceWrapper.update(res)
-                case "OPTIONS" => idOptionsRoutingHandler()
-                case _        => methodNotAllowed
-              }
-            }.getOrElse(default(requestHeader))
-          }
+          case IdExpression(sid) => { method match {
+            case "GET"    => resourceWrapper.read(sid)
+            case "PUT"    => resourceWrapper.write(sid)
+            case "DELETE" => resourceWrapper.delete(sid)
+            case "PATCH"  => resourceWrapper.update(sid)
+            case "OPTIONS" => resourceWrapper.fromId(sid).map(res => idOptionsRoutingHandler())
+            case _        => Some(methodNotAllowed)
+          }}.getOrElse(default(requestHeader))
           case _  => default(requestHeader)
         }
       } else {
