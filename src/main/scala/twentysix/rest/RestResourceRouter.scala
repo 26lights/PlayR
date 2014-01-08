@@ -35,6 +35,68 @@ object RestPath {
   }
 }
 
+class ResourceWrapperGenerator[R, C<:Controller with Resource](val controller: C) {
+  private var methodNotAllowed = Action { Results.MethodNotAllowed }
+
+  def name = controller.name
+
+  val fromId = if(controller.caps contains ResourceCaps.Identity)
+    (sub: C, sid: String) => sub.asInstanceOf[IdentifiedResource[R]].fromId(sid)
+    else (sub: C, sid: String) => None
+
+  val read = if(controller.caps contains ResourceCaps.Read)
+    (sub: C, id: R) => sub.asInstanceOf[ResourceRead[R]].read(id)
+    else (sub: C, id: R) => methodNotAllowed
+
+  val write = if(controller.caps contains ResourceCaps.Write)
+    (sub: C, id: R) => sub.asInstanceOf[ResourceWrite[R]].write(id)
+    else (sub: C, id: R) => methodNotAllowed
+
+  val update = if(controller.caps contains ResourceCaps.Update)
+    (sub: C, id: R) => sub.asInstanceOf[ResourceUpdate[R]].update(id)
+    else (sub: C, id: R) => methodNotAllowed
+
+  val delete = if(controller.caps contains ResourceCaps.Delete)
+    (sub: C, id: R) => sub.asInstanceOf[ResourceDelete[R]].delete(id)
+    else (sub: C, id: R) => methodNotAllowed
+
+  val list = if(controller.caps contains ResourceCaps.Read)
+    (sub: C) => sub.asInstanceOf[ResourceRead[R]].list() else (sub: C) => methodNotAllowed
+
+  val create = if(controller.caps contains ResourceCaps.Create)
+    (sub: C) => sub.asInstanceOf[ResourceCreate].create() else (sub: C) => methodNotAllowed
+
+  def forController(subController: C) = {
+    new ResourceWrapper (fromId, read, write, update, delete, list, create, subController)
+  }
+
+  class ResourceWrapper(val fromIdImpl: (C, String) => Option[R],
+                        val readImpl: (C, R) => EssentialAction,
+                        val writeImpl: (C, R) => EssentialAction,
+                        val updateImpl: (C, R) => EssentialAction,
+                        val deleteImpl:(C, R) => EssentialAction,
+                        val listImpl: (C) => EssentialAction,
+                        val createImpl: (C) => EssentialAction,
+                        val subController: C)
+      extends Resource
+      with IdentifiedResource[R]
+      with ResourceCreate
+      with ResourceRead[R]
+      with ResourceDelete[R]
+      with ResourceWrite[R]
+      with ResourceUpdate[R] {
+    def name = subController.name
+    def fromId(sid: String) = fromIdImpl(subController, sid)
+    def read(id: R) = readImpl(subController, id)
+    def write(id: R) = writeImpl(subController, id)
+    def update(id: R) = updateImpl(subController, id)
+    def delete(id: R) = deleteImpl(subController, id)
+    def create() = createImpl(subController)
+    def list() = listImpl(subController)
+  }
+}
+
+
 class RestResourceRouter(val controller: Controller with Resource) extends RestRouter{
 
   protected var _prefix: String = ""
@@ -46,40 +108,14 @@ class RestResourceRouter(val controller: Controller with Resource) extends RestR
   def prefix = _prefix
   def documentation = Nil
 
+  private var methodNotAllowed = Action { Results.MethodNotAllowed }
   private val IdExpression = "^/([^/]+)/?$".r
   private val SubResourceExpression = "^(/([^/]+)/([^/]+)).*$".r
 
-  private val _defaultVerifyId = (sid: String) => false
-  private def _verifyId[R](resource: IdentifiedResource[R]) =
-    (sid: String) => resource.fromId(sid).isDefined
+  private val resourceWrapperGenerator = new ResourceWrapperGenerator(controller)
+  private val resourceWrapper = resourceWrapperGenerator.forController(controller)
 
-  lazy val verifyId =
-    if(controller.caps contains ResourceCaps.Identity)
-      _verifyId(controller.asInstanceOf[IdentifiedResource[_]])
-    else
-      _defaultVerifyId
-
-  private var methodNotAllowed = Action { Results.MethodNotAllowed }
-  private val _defaultRoutingHandler = () => methodNotAllowed
-  private val _defaultIdRoutingHandler = (sid: String) => if(verifyId(sid)) Some(methodNotAllowed) else None
   private val _defaultSubRoutingHandler = (requestHeader: RequestHeader, subPrefix: String, id: String, subPath: String) => None
-
-  private def _getRoutingHandler[R](resource: ResourceRead[R]) =
-    (sid: String) => resource.fromId(sid).map(resource.read)
-
-  private def _listRoutingHandler[R](resource: ResourceRead[R]) = resource.list _
-
-  private def _putRoutingHandler[R](resource: ResourceWrite[R]) =
-    (sid: String) => resource.fromId(sid).map(resource.write)
-
-  private def _deleteRoutingHandler[R](resource: ResourceDelete[R]) =
-    (sid: String) => resource.fromId(sid).map(resource.delete)
-
-  private def _patchRoutingHandler[R](resource: ResourceUpdate[R]) =
-    (sid: String) => resource.fromId(sid).map(resource.update)
-
-  private def _postRoutingHandler[R](resource: ResourceCreate) = resource.create _
-
   private def _subRoutingHandler[R](resource: SubResource[R]) =
     (requestHeader: RequestHeader, subPrefix: String, sid: String, subPath: String) => {
       for {
@@ -88,19 +124,6 @@ class RestResourceRouter(val controller: Controller with Resource) extends RestR
         res <- action(id, requestHeader, requestHeader.path.take(_prefix.length()+subPrefix.length()))
       } yield res
     }
-
-  lazy val getRoutingHandler = if(controller.caps contains ResourceCaps.Read)
-    _getRoutingHandler(controller.asInstanceOf[ResourceRead[_]]) else _defaultIdRoutingHandler
-  lazy val listRoutingHandler = if(controller.caps contains ResourceCaps.Read)
-    _listRoutingHandler(controller.asInstanceOf[ResourceRead[_]]) else _defaultRoutingHandler
-  lazy val putRoutingHandler = if(controller.caps contains ResourceCaps.Write)
-     _putRoutingHandler(controller.asInstanceOf[ResourceWrite[_]]) else _defaultIdRoutingHandler
-  lazy val patchRoutingHandler = if(controller.caps contains ResourceCaps.Update)
-    _patchRoutingHandler(controller.asInstanceOf[ResourceUpdate[_]]) else _defaultIdRoutingHandler
-  lazy val deleteRoutingHandler = if(controller.caps contains ResourceCaps.Delete)
-    _deleteRoutingHandler(controller.asInstanceOf[ResourceDelete[_]]) else _defaultIdRoutingHandler
-  lazy val postRoutingHandler = if(controller.caps contains ResourceCaps.Create)
-    _postRoutingHandler(controller.asInstanceOf[ResourceCreate]) else _defaultRoutingHandler
   lazy val subRoutingHandler = if(controller.caps contains ResourceCaps.Child)
     _subRoutingHandler(controller.asInstanceOf[SubResource[_]]) else _defaultSubRoutingHandler
 
@@ -121,13 +144,7 @@ class RestResourceRouter(val controller: Controller with Resource) extends RestR
   }
 
   def rootOptionsRoutingHandler = optionsRoutingHandler(ROOT_OPTIONS)
-  def idOptionsRoutingHandler(sid: String) = {
-    if(verifyId(sid)){
-      Some(optionsRoutingHandler(ID_OPTIONS))
-    } else {
-      None
-    }
-  }
+  def idOptionsRoutingHandler = optionsRoutingHandler(ID_OPTIONS)
 
   def routeResources = Map("" -> controller)
 
@@ -141,19 +158,23 @@ class RestResourceRouter(val controller: Controller with Resource) extends RestR
           case SubResourceExpression(subPrefix, id, subPath) =>
             subRoutingHandler(requestHeader, subPrefix, id, subPath).getOrElse(default(requestHeader))
           case "" | "/" => method match {
-            case "GET"     => listRoutingHandler()
-            case "POST"    => postRoutingHandler()
+            case "GET"     => resourceWrapper.list()
+            case "POST"    => resourceWrapper.create()
             case "OPTIONS" => rootOptionsRoutingHandler()
             case _         => methodNotAllowed
           }
-          case IdExpression(sid) => { method match {
-              case "GET"    => getRoutingHandler(sid)
-              case "PUT"    => putRoutingHandler(sid)
-              case "DELETE" => deleteRoutingHandler(sid)
-              case "PATCH"  => patchRoutingHandler(sid)
-              case "OPTIONS" => idOptionsRoutingHandler(sid)
-              case _        => Some(methodNotAllowed)
-            }}.getOrElse(default(requestHeader))
+          case IdExpression(sid) => {
+            resourceWrapper.fromId(sid).map { res =>
+              method match {
+                case "GET"    => resourceWrapper.read(res)
+                case "PUT"    => resourceWrapper.write(res)
+                case "DELETE" => resourceWrapper.delete(res)
+                case "PATCH"  => resourceWrapper.update(res)
+                case "OPTIONS" => idOptionsRoutingHandler()
+                case _        => methodNotAllowed
+              }
+            }.getOrElse(default(requestHeader))
+          }
           case _  => default(requestHeader)
         }
       } else {
