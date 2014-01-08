@@ -18,7 +18,7 @@ trait Resource{
   def name: String
 }
 
-case class ResourceAction(val name: String, val method: String) extends Resource {
+case class ResourceAction(name: String, method: String) extends Resource {
   caps += ResourceCaps.Action
 }
 
