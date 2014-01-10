@@ -34,6 +34,7 @@ trait IdentifiedResource[R] extends Resource{
 
   def fromId(id: String): Option[R]
 
+  def requestWrapper(sid: String, block: (String => Option[EssentialAction])): Option[EssentialAction] = block(sid)
 }
 
 /**
@@ -44,6 +45,8 @@ trait ResourceRead[R] extends IdentifiedResource[R] {
 
   def read(id: R): EssentialAction
   def list(): EssentialAction
+
+  def readRequestWrapper(sid: String, block: (String => Option[EssentialAction])): Option[EssentialAction] = requestWrapper(sid, block)
 }
 
 /**
@@ -53,6 +56,8 @@ trait ResourceWrite[R] extends IdentifiedResource[R]{
   caps+=ResourceCaps.Write
 
   def write(id: R): EssentialAction
+
+  def writeRequestWrapper(sid: String, block: (String => Option[EssentialAction])): Option[EssentialAction] = requestWrapper(sid, block)
 }
 
 /**
@@ -71,6 +76,8 @@ trait ResourceDelete[R] extends IdentifiedResource[R]{
   caps+=ResourceCaps.Delete
 
   def delete(id: R): EssentialAction
+
+  def deleteRequestWrapper(sid: String, block: (String => Option[EssentialAction])): Option[EssentialAction] = requestWrapper(sid, block)
 }
 
 /**
@@ -80,6 +87,8 @@ trait ResourceUpdate[R] extends IdentifiedResource[R]{
   caps+=ResourceCaps.Update
 
   def update(id: R): EssentialAction
+
+  def updateRequestWrapper(sid: String, block: (String => Option[EssentialAction])): Option[EssentialAction] = requestWrapper(sid, block)
 }
 
 /**
