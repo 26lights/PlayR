@@ -101,33 +101,33 @@ trait SubResource[R] extends IdentifiedResource[R]{
 }
 
 trait RestController[R] extends Controller
-                             with IdentifiedResource[R]
+                           with IdentifiedResource[R]
 
 trait RestReadController[R] extends Controller
-                                 with IdentifiedResource[R]
-                                 with ResourceRead[R]
+                               with IdentifiedResource[R]
+                               with ResourceRead[R]
 
 /**
  * Read and write controller: implements GET, POST and PATCH for partial updates
  */
 trait RestRwController[R] extends Controller
-                               with IdentifiedResource[R]
-                               with ResourceCreate
-                               with ResourceRead[R]
-                               with ResourceUpdate[R]
+                             with IdentifiedResource[R]
+                             with ResourceCreate
+                             with ResourceRead[R]
+                             with ResourceUpdate[R]
 
 /**
  * Same as RestRWController plus DELETE method
  */
 trait RestRwdController[R] extends RestRwController[R]
-                                with ResourceDelete[R]
+                              with ResourceDelete[R]
 
 /**
  * Classic rest controller: handle GET, POST, PUT and DELETE http methods
  */
 trait RestCrudController[R] extends Controller
-                                 with IdentifiedResource[R]
-                                 with ResourceCreate
-                                 with ResourceRead[R]
-                                 with ResourceDelete[R]
-                                 with ResourceWrite[R]
+                               with IdentifiedResource[R]
+                               with ResourceCreate
+                               with ResourceRead[R]
+                               with ResourceDelete[R]
+                               with ResourceWrite[R]
