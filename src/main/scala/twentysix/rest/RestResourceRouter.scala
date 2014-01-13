@@ -4,35 +4,48 @@ import play.core.Router
 import play.api.mvc._
 import play.api.http.HeaderNames.ALLOW
 import scala.runtime.AbstractPartialFunction
+import scala.language.implicitConversions
 
-abstract class RestPath[R] {
-  def apply(id: R, requestHeader: RequestHeader, prefix: String): Option[Handler]
+case class ResourceRouteMap[R](routeMap: Map[String, (R, RequestHeader, String)=> Option[Handler]] = Map[String, (R, RequestHeader, String)=> Option[Handler]]()) {
+  sealed trait Routing {
+    def routing(id: R, requestHeader: RequestHeader, prefix: String): Option[Handler]
+  }
 
-}
-object RestPath {
-  def apply[R](router: RestResourceRouter) = new RestPath[R] {
-    def apply(id: R, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
+  class ResourceRouting(val router: RestResourceRouter) extends Routing{
+    def routing(id: R, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
       Router.Include {
         router.setPrefix(prefix)
         router
       }.unapply(requestHeader)
     }
   }
-  def apply[R](f: R => Controller with Resource) = new RestPath[R] {
-    def apply(id: R, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
+
+  class ControllerRouting[C<:Controller with SubResource[R, C]](val controller: C) extends Routing{
+    def routing(id: R, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
       Router.Include {
-        val router = new RestResourceRouter(f(id))
+        val router = new RestResourceRouter(controller.withParent(id))
         router.setPrefix(prefix)
         router
       }.unapply(requestHeader)
     }
   }
-  def apply[R](method: String, f: R => EssentialAction) = new RestPath[R] {
-    def apply(id: R, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
+
+  class ActionRouting(val method: String, val f: R => EssentialAction) extends Routing {
+    def routing(id: R, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
         if (method==requestHeader.method) Some(f(id))
         else Some(Action { Results.MethodNotAllowed })
     }
   }
+
+
+  def add(t: (String, (R, RequestHeader, String)=> Option[Handler])) = this.copy(routeMap = this.routeMap + t )
+
+  def add(route: String, router: RestResourceRouter): ResourceRouteMap[R] = this.add(route-> new ResourceRouting(router).routing _)
+  def add[C<:Controller with SubResource[R, C]](route: String, controller: C): ResourceRouteMap[R] =
+    this.add(route-> new ControllerRouting(controller).routing _)
+  def add(route: String, method: String, f: (R => EssentialAction)): ResourceRouteMap[R] =
+    this.add(route-> new ActionRouting(method, f).routing _)
+
 }
 
 class ResourceWrapperGenerator[C<:Controller with Resource](val controller: C) {
@@ -68,6 +81,17 @@ class ResourceWrapperGenerator[C<:Controller with Resource](val controller: C) {
   }
   val delete = if(controller.caps contains ResourceCaps.Delete) _delete _  else (sub: C, sid: String) => Some(methodNotAllowed)
 
+  def _handleRoute[R](sub: C, requestHeader: RequestHeader, prefixLength: Int, subPrefix: String, sid: String, subPath: String) = {
+    val ctrl = sub.asInstanceOf[ResourceRoutes[R]]
+    for {
+      action <- ctrl.routeMap.routeMap.get(subPath)
+      id <- ctrl.fromId(sid)
+      res <- action(id, requestHeader, requestHeader.path.take(prefixLength+subPrefix.length()))
+    } yield res
+  }
+  private def _defaultHandleRoute(sub: C, requestHeader: RequestHeader, prefixLength: Int, subPrefix: String, sid: String, subPath: String) = None
+  val handleRoute = if(controller.caps contains ResourceCaps.Parent) _handleRoute _ else _defaultHandleRoute _
+
   val list = if(controller.caps contains ResourceCaps.Read)
     (sub: C) => sub.asInstanceOf[ResourceRead[_]].list() else (sub: C) => methodNotAllowed
 
@@ -75,7 +99,7 @@ class ResourceWrapperGenerator[C<:Controller with Resource](val controller: C) {
     (sub: C) => sub.asInstanceOf[ResourceCreate].create() else (sub: C) => methodNotAllowed
 
   def forController(subController: C) = {
-    new ResourceWrapper (fromId, read, write, update, delete, list, create, subController)
+    new ResourceWrapper (fromId, read, write, update, delete, list, create, handleRoute, subController)
   }
 
   class ResourceWrapper(val fromIdImpl: (C, String) => Option[_],
@@ -85,6 +109,7 @@ class ResourceWrapperGenerator[C<:Controller with Resource](val controller: C) {
                         val deleteImpl:(C, String) => Option[EssentialAction],
                         val listImpl: (C) => EssentialAction,
                         val createImpl: (C) => EssentialAction,
+                        val handleRouteImpl: (C, RequestHeader, Int, String, String, String) => Option[Handler],
                         val subController: C) {
     def name = subController.name
     def fromId(sid: String) = fromIdImpl(subController, sid)
@@ -94,6 +119,8 @@ class ResourceWrapperGenerator[C<:Controller with Resource](val controller: C) {
     def delete(sid: String) = deleteImpl(subController, sid)
     def create() = createImpl(subController)
     def list() = listImpl(subController)
+    def handleRoute(requestHeader: RequestHeader, prefixLength: Int, subPrefix: String, sid: String, subPath: String) =
+      handleRouteImpl(subController, requestHeader, prefixLength, subPrefix, sid, subPath)
   }
 }
 
@@ -109,24 +136,12 @@ class RestResourceRouter(val controller: Controller with Resource) extends RestR
   def prefix = _prefix
   def documentation = Nil
 
-  private var methodNotAllowed = Action { Results.MethodNotAllowed }
+  private val methodNotAllowed = Action { Results.MethodNotAllowed }
   private val IdExpression = "^/([^/]+)/?$".r
   private val SubResourceExpression = "^(/([^/]+)/([^/]+)).*$".r
 
   private val resourceWrapperGenerator = new ResourceWrapperGenerator(controller)
   private val resourceWrapper = resourceWrapperGenerator.forController(controller)
-
-  private val _defaultSubRoutingHandler = (requestHeader: RequestHeader, subPrefix: String, id: String, subPath: String) => None
-  private def _subRoutingHandler[R](resource: SubResource[R]) =
-    (requestHeader: RequestHeader, subPrefix: String, sid: String, subPath: String) => {
-      for {
-        action <- resource.subResources.get(subPath)
-        id <- resource.fromId(sid)
-        res <- action(id, requestHeader, requestHeader.path.take(_prefix.length()+subPrefix.length()))
-      } yield res
-    }
-  lazy val subRoutingHandler = if(controller.caps contains ResourceCaps.Child)
-    _subRoutingHandler(controller.asInstanceOf[SubResource[_]]) else _defaultSubRoutingHandler
 
   private val ROOT_OPTIONS = Map(
     ResourceCaps.Read   -> "GET",
@@ -157,7 +172,7 @@ class RestResourceRouter(val controller: Controller with Resource) extends RestR
 
         path match {
           case SubResourceExpression(subPrefix, id, subPath) =>
-            subRoutingHandler(requestHeader, subPrefix, id, subPath).getOrElse(default(requestHeader))
+            resourceWrapper.handleRoute(requestHeader, _prefix.length(), subPrefix, id, subPath).getOrElse(default(requestHeader))
           case "" | "/" => method match {
             case "GET"     => resourceWrapper.list()
             case "POST"    => resourceWrapper.create()

@@ -10,7 +10,7 @@ import play.api.Logger
 
 object ResourceCaps extends Enumeration {
   type ResourceCaps = Value
-  val Identity, Read, Write, Create, Delete, Update, Child = Value
+  val Identity, Read, Write, Create, Delete, Update, Parent, Child = Value
 }
 
 trait Resource{
@@ -91,14 +91,31 @@ trait ResourceUpdate[R] extends IdentifiedResource[R]{
   def updateRequestWrapper(sid: String, block: (String => Option[EssentialAction])): Option[EssentialAction] = requestWrapper(sid, block)
 }
 
+
 /**
  * Define link to other resources accessible via a sub paths
  */
-trait SubResource[R] extends IdentifiedResource[R]{
+trait ResourceRoutes[R] extends IdentifiedResource[R] {
+  caps+=ResourceCaps.Parent
+
+  val routeMap: ResourceRouteMap[R]
+}
+
+/**
+ * Can create new instances tailored for a specific parent reosurce
+ */
+trait SubResource[P, S<:SubResource[P, S]] extends Resource {
+  self: S =>
   caps+=ResourceCaps.Child
 
-  def subResources: Map[String, RestPath[R]]
+  def withParent(parentResource: P): S
 }
+
+
+
+//-------------------------
+//---- Shortcut traits ----
+//-------------------------
 
 trait RestController[R] extends Controller
                            with IdentifiedResource[R]
