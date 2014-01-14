@@ -13,10 +13,15 @@ object SwaggerResource {
   implicit val jsonFormat = Json.format[SwaggerResource]
 }
 
-case class SwaggerOperation(method: String, nickname: String, summary: String, parameters: Seq[String]= Seq(), `type`: String="string")
+case class SwaggerParameter(name: String, description: String, paramType: String="path", `type`: String="string", required: Boolean=true)
+object SwaggerParameter {
+  implicit val jsonFormat = Json.format[SwaggerParameter]
+}
+
+case class SwaggerOperation(method: String, nickname: String, summary: String, parameters: Seq[SwaggerParameter], dataType: String="string")
 object SwaggerOperation {
   implicit val jsonFormat = Json.format[SwaggerOperation]
-  def simple(method: String, nickname: String) = new SwaggerOperation(method, nickname, nickname)
+  def simple(method: String, nickname: String, parameters: Seq[SwaggerParameter]) = new SwaggerOperation(method, nickname, nickname, parameters)
 }
 
 case class SwaggerApi(path: String, description: String, operations: Traversable[SwaggerOperation])
@@ -44,33 +49,34 @@ class SwaggerRestDocumentation(val restApi: RestRouter, val apiVersion: String="
     SwaggerResource(mapping._1, mapping._2.resource.getClass.getName)
   }
 
-  def operationList(path: String, routeInfo: RestRouteInfo): List[SwaggerApi] = {
+  def operationList(path: String, routeInfo: RestRouteInfo, parameters: Seq[SwaggerParameter] = Seq()): List[SwaggerApi] = {
     var res = List[SwaggerApi]()
     val resource = routeInfo.resource
     var ops = resource.caps.flatMap{ caps =>
       caps match {
-        case ResourceCaps.Read   => Some(SwaggerOperation.simple("GET", s"List ${resource.name}"))
-        case ResourceCaps.Create => Some(SwaggerOperation.simple("POST", s"Create ${resource.name}"))
-        case ResourceCaps.Action => Some(SwaggerOperation.simple(resource.asInstanceOf[ResourceAction].method, resource.name))
+        case ResourceCaps.Read   => Some(SwaggerOperation.simple("GET", s"List ${resource.name}", parameters))
+        case ResourceCaps.Create => Some(SwaggerOperation.simple("POST", s"Create ${resource.name}", parameters))
+        case ResourceCaps.Action => Some(SwaggerOperation.simple(resource.asInstanceOf[ResourceAction].method, resource.name, parameters))
         case _ => None
       }
     }
     if(!ops.isEmpty)
       res = res :+ new SwaggerApi(path, "Generic operations", ops)
 
+    val subParams = parameters :+ SwaggerParameter(s"${resource.name}_id", s"identified ${resource.name}")
     ops = resource.caps.flatMap{ caps =>
       caps match {
-        case ResourceCaps.Read   => Some(SwaggerOperation.simple("GET", s"Read ${resource.name}"))
-        case ResourceCaps.Write  => Some(SwaggerOperation.simple("PUT", s"Write ${resource.name}"))
-        case ResourceCaps.Update => Some(SwaggerOperation.simple("PATCH", s"Update ${resource.name}"))
-        case ResourceCaps.Delete => Some(SwaggerOperation.simple("DELETE", s"Delete ${resource.name}"))
+        case ResourceCaps.Read   => Some(SwaggerOperation.simple("GET", s"Read ${resource.name}", subParams))
+        case ResourceCaps.Write  => Some(SwaggerOperation.simple("PUT", s"Write ${resource.name}", subParams))
+        case ResourceCaps.Update => Some(SwaggerOperation.simple("PATCH", s"Update ${resource.name}", subParams))
+        case ResourceCaps.Delete => Some(SwaggerOperation.simple("DELETE", s"Delete ${resource.name}", subParams))
         case _ => None
       }
     }
     if(!ops.isEmpty)
-      res = res :+ new SwaggerApi(s"$path/:${resource.name}_id", "Operations on identified resource", ops)
+      res = res :+ new SwaggerApi(s"$path/{${resource.name}_id}", "Operations on identified resource", ops)
 
-    res ++ routeInfo.subResources.flatMap(info => operationList(s"$path/:${resource.name}_id/${info.path}", info))
+    res ++ routeInfo.subResources.flatMap(info => operationList(s"$path/{${resource.name}_id}/${info.path}", info, subParams))
   }
 
   def resourceListing = Action {
