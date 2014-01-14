@@ -10,7 +10,7 @@ import play.api.Logger
 
 object ResourceCaps extends Enumeration {
   type ResourceCaps = Value
-  val Identity, Read, Write, Create, Delete, Update, Parent, Child = Value
+  val Identity, Read, Write, Create, Delete, Update, Parent, Child, Action = Value
 }
 
 trait Resource{

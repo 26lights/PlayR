@@ -58,6 +58,7 @@ class SwaggerRestDocumentation(val restApi: RestRouter, val apiVersion: String="
         case ResourceCaps.Write  => Some(SwaggerOperation.simple("PUT", s"Write ${resource.name}"))
         case ResourceCaps.Update => Some(SwaggerOperation.simple("PATCH", s"Update ${resource.name}"))
         case ResourceCaps.Delete => Some(SwaggerOperation.simple("DELETE", s"Delete ${resource.name}"))
+        case ResourceCaps.Action => Some(SwaggerOperation.simple(resource.name, s"${resource.name}"))
         case _ => None
       }
     }
