@@ -9,7 +9,7 @@ import scala.language.implicitConversions
 case class ResourceRouteMap[R](routeMap: Map[String, ResourceRouteMap[R]#Routing] = Map[String, ResourceRouteMap[R]#Routing]()) {
   sealed trait Routing {
     def routing(id: R, requestHeader: RequestHeader, prefix: String): Option[Handler]
-    def resource: Resource
+    def routeInfo(path: String): RestRouteInfo
   }
 
   class ResourceRouting[C<:Controller with Resource](val router: RestResourceRouter[C]) extends Routing{
@@ -19,11 +19,12 @@ case class ResourceRouteMap[R](routeMap: Map[String, ResourceRouteMap[R]#Routing
         router
       }.unapply(requestHeader)
     }
-    def resource = router.resourceWrapper.wrappedController
+    def routeInfo(path: String) = router.resourceWrapper.routeResources(path)
   }
 
   class ControllerRouting[C<:Controller with SubResource[R, C]](val controller: C) extends Routing{
     val resourceWrapperGenerator = new ResourceWrapperGenerator(controller)
+    val resourceWrapper = resourceWrapperGenerator.forController(controller)
     def routing(id: R, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
       Router.Include {
         val router = new RestResourceRouter(resourceWrapperGenerator.forController(controller.withParent(id)))
@@ -31,7 +32,7 @@ case class ResourceRouteMap[R](routeMap: Map[String, ResourceRouteMap[R]#Routing
         router
       }.unapply(requestHeader)
     }
-    def resource = controller
+    def routeInfo(path: String) = resourceWrapper.routeResources(path)
   }
 
   class ActionRouting(val method: String, val f: R => EssentialAction) extends Routing {
@@ -39,10 +40,10 @@ case class ResourceRouteMap[R](routeMap: Map[String, ResourceRouteMap[R]#Routing
         if (method==requestHeader.method) Some(f(id))
         else Some(Action { Results.MethodNotAllowed })
     }
-    def resource = new Resource{
+    def routeInfo(path: String) = RestRouteInfo(path, new Resource{
       val name = method
       caps += ResourceCaps.Action
-    }
+    }, Seq())
   }
 
 
@@ -101,14 +102,11 @@ class ResourceWrapperGenerator[C<:Controller with Resource](val controller: C) {
   private def _defaultHandleRoute(sub: C, requestHeader: RequestHeader, prefixLength: Int, subPrefix: String, sid: String, subPath: String) = None
   val handleRoute = if(controller.caps contains ResourceCaps.Parent) _handleRoute _ else _defaultHandleRoute _
 
-  def _routeResources[R](sub: C, prefix: String): Map[String, Resource] = {
+  def _routeResources[R](sub: C, path: String): RestRouteInfo = {
     val ctrl = sub.asInstanceOf[ResourceRoutes[R]]
-    ctrl.routeMap.routeMap.map { t =>
-      val (route, routing) = t
-      prefix+route -> routing.resource
-    }
+    RestRouteInfo(path, controller, ctrl.routeMap.routeMap.map { t => t._2.routeInfo(t._1) }.toSeq )
   }
-  def _defaultRouteResources(sub: C, prefix: String): Map[String, Resource] = Map[String, Resource]()
+  def _defaultRouteResources(sub: C, path: String): RestRouteInfo = RestRouteInfo(path, controller, Seq())
   val routeResources = if(controller.caps contains ResourceCaps.Parent) _routeResources _ else _defaultRouteResources _
 
   val list = if(controller.caps contains ResourceCaps.Read)
@@ -129,7 +127,7 @@ class ResourceWrapperGenerator[C<:Controller with Resource](val controller: C) {
                         val listImpl: (C) => EssentialAction,
                         val createImpl: (C) => EssentialAction,
                         val handleRouteImpl: (C, RequestHeader, Int, String, String, String) => Option[Handler],
-                        val routeResourcesImpl: (C, String) => Map[String, Resource],
+                        val routeResourcesImpl: (C, String) => RestRouteInfo,
                         val wrappedController: C) {
     def name = wrappedController.name
     def fromId(sid: String) = fromIdImpl(wrappedController, sid)
@@ -141,7 +139,7 @@ class ResourceWrapperGenerator[C<:Controller with Resource](val controller: C) {
     def list() = listImpl(wrappedController)
     def handleRoute(requestHeader: RequestHeader, prefixLength: Int, subPrefix: String, sid: String, subPath: String) =
       handleRouteImpl(wrappedController, requestHeader, prefixLength, subPrefix, sid, subPath)
-    def routeResources(prefix: String) = routeResourcesImpl(wrappedController, prefix)
+    def routeResources(path: String) = routeResourcesImpl(wrappedController, path)
   }
 }
 
@@ -180,7 +178,7 @@ class RestResourceRouter[C<:Controller with Resource](val resourceWrapper: Resou
   def rootOptionsRoutingHandler = optionsRoutingHandler(ROOT_OPTIONS)
   def idOptionsRoutingHandler = optionsRoutingHandler(ID_OPTIONS)
 
-  def routeResources = Map("" -> resourceWrapper.wrappedController)++resourceWrapper.routeResources(s"/:${resourceWrapper.wrappedController.name}_id/")
+  def routeResources(root: String) = Seq(resourceWrapper.routeResources(root))
 
   def routes = new AbstractPartialFunction[RequestHeader, Handler] {
     override def applyOrElse[A <: RequestHeader, B>: Handler]( requestHeader: A, default: A => B) = {
