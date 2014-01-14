@@ -36,32 +36,27 @@ class SwaggerRestDocumentation(val restApi: RestRouter, val apiVersion: String="
 
   private val SubPathExpression = "^(/([^/]+)).*$".r
 
-  def buildResourceTree(prefix: String, routeInfo: RestRouteInfo): Seq[(String, Resource)] = {
-    Seq(s"$prefix/${routeInfo.path}" -> routeInfo.resource) ++ routeInfo.subResources.flatMap{
-      buildResourceTree(s"$prefix/${routeInfo.path}/:${routeInfo.resource.name}_id", _)
-    }
-  }
-
-  private val resourceTree: Map[String, Resource] = restApi.routeResources("/").flatMap {
-    buildResourceTree("",_)
+  val apiMap = restApi.routeResources("").map{ info =>
+    info.path -> info
   }.toMap
 
-  def apiList = resourceTree.map { t =>
-    SwaggerResource(t._1, t._2.getClass.getName)
+  def apiList = apiMap.map { mapping =>
+    SwaggerResource(mapping._1, mapping._2.resource.getClass.getName)
   }
 
-  def operationList(path: String, resource: Resource) = {
+  def operationList(path: String, routeInfo: RestRouteInfo): List[SwaggerApi] = {
     var res = List[SwaggerApi]()
+    val resource = routeInfo.resource
     var ops = resource.caps.flatMap{ caps =>
       caps match {
         case ResourceCaps.Read   => Some(SwaggerOperation.simple("GET", s"List ${resource.name}"))
         case ResourceCaps.Create => Some(SwaggerOperation.simple("POST", s"Create ${resource.name}"))
-        case ResourceCaps.Action => Some(SwaggerOperation.simple(resource.name, s"Specific action"))
+        case ResourceCaps.Action => Some(SwaggerOperation.simple(resource.asInstanceOf[ResourceAction].method, resource.name))
         case _ => None
       }
     }
     if(!ops.isEmpty)
-      res = new SwaggerApi(path, "Generic operations", ops) :: res
+      res = res :+ new SwaggerApi(path, "Generic operations", ops)
 
     ops = resource.caps.flatMap{ caps =>
       caps match {
@@ -73,9 +68,9 @@ class SwaggerRestDocumentation(val restApi: RestRouter, val apiVersion: String="
       }
     }
     if(!ops.isEmpty)
-      res = new SwaggerApi(path+"/:id", "Operations on identified resource", ops) :: res
+      res = res :+ new SwaggerApi(s"$path/:${resource.name}_id", "Operations on identified resource", ops)
 
-    res
+    res ++ routeInfo.subResources.flatMap(info => operationList(s"$path/:${resource.name}_id/${info.path}", info))
   }
 
   def resourceListing = Action {
@@ -91,13 +86,13 @@ class SwaggerRestDocumentation(val restApi: RestRouter, val apiVersion: String="
     Results.Ok(views.html.swagger(this.prefix+".json"))
   }
 
-  def resourceDesc(path: String, resource: Resource) = Action {
+  def resourceDesc(path: String, routeInfo: RestRouteInfo) = Action {
     val res = Json.obj(
         "apiVersion" -> apiVersion,
         "swaggerVersion" -> "1.2",
         "basePath" -> restApi.prefix,
         "resourcePath" -> path,
-        "apis" -> operationList(path, resource)
+        "apis" -> operationList(path, routeInfo)
     )
     Results.Ok(Json.toJson(res))
   }
@@ -111,7 +106,7 @@ class SwaggerRestDocumentation(val restApi: RestRouter, val apiVersion: String="
         path match {
           case ".json"         => resourceListing
           case ""|"/"          => renderSwaggerUi
-          case ApiListing(api) => resourceTree.get(api).map(resourceDesc(api, _)).getOrElse(default(requestHeader))
+          case ApiListing(api) => apiMap.get(api).map(resourceDesc(api, _)).getOrElse(default(requestHeader))
           case _               => default(requestHeader)
         }
       } else {

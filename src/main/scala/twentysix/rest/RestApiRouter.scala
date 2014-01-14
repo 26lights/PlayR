@@ -12,7 +12,7 @@ trait ApiRouter extends RestRouter{
   protected var _prefix: String =""
 
   def routeResources(root: String) = routeMap.flatMap{
-    case (path, router) => router.routeResources(path)
+    case (path, router) => router.routeResources(s"$root/$path")
   }.toSeq
 
   def setPrefix(newPrefix: String) = {
