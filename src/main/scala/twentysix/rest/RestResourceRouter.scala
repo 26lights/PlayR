@@ -40,10 +40,7 @@ case class ResourceRouteMap[R](routeMap: Map[String, ResourceRouteMap[R]#Routing
         if (method==requestHeader.method) Some(f(id))
         else Some(Action { Results.MethodNotAllowed })
     }
-    def routeInfo(path: String) = RestRouteInfo(path, new Resource{
-      val name = method
-      caps += ResourceCaps.Action
-    }, Seq())
+    def routeInfo(path: String) = RestRouteInfo(path, ResourceAction(path, method), Seq())
   }
 
 

@@ -18,6 +18,10 @@ trait Resource{
   def name: String
 }
 
+case class ResourceAction(val name: String, val method: String) extends Resource {
+  caps += ResourceCaps.Action
+}
+
 /**
  * Define the conversion from an url id to a real object
  */
