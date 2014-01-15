@@ -193,12 +193,12 @@ class RestResourceRouter[C<:Controller with Resource](val resourceWrapper: Resou
             case _         => methodNotAllowed
           }
           case IdExpression(sid) => { method match {
-            case "GET"    => resourceWrapper.read(sid)
-            case "PUT"    => resourceWrapper.write(sid)
-            case "DELETE" => resourceWrapper.delete(sid)
-            case "PATCH"  => resourceWrapper.update(sid)
+            case "GET"     => resourceWrapper.read(sid)
+            case "PUT"     => resourceWrapper.write(sid)
+            case "DELETE"  => resourceWrapper.delete(sid)
+            case "PATCH"   => resourceWrapper.update(sid)
             case "OPTIONS" => resourceWrapper.fromId(sid).map(res => idOptionsRoutingHandler())
-            case _        => Some(methodNotAllowed)
+            case _         => resourceWrapper.fromId(sid).map(res => methodNotAllowed)
           }}.getOrElse(default(requestHeader))
           case _  => default(requestHeader)
         }
