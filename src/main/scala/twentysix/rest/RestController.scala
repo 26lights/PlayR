@@ -102,6 +102,7 @@ trait ResourceUpdate[R] extends IdentifiedResource[R]{
 trait ResourceRoutes[R] extends IdentifiedResource[R] {
   caps+=ResourceCaps.Parent
 
+  def RouteMap = ResourceRouteMap[R]()
   val routeMap: ResourceRouteMap[R]
 }
 
