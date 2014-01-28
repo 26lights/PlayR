@@ -107,7 +107,7 @@ trait ResourceRoutes[R] extends IdentifiedResource[R] {
 }
 
 /**
- * Can create new instances tailored for a specific parent reosurce
+ * Can create new instances tailored for a specific parent resource
  */
 trait SubResource[P, S<:SubResource[P, S]] extends Resource {
   self: S =>
