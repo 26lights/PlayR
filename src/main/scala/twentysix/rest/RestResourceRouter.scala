@@ -66,25 +66,25 @@ class ResourceWrapperGenerator[C<:Controller with Resource](val controller: C) {
 
   def _read[R](sub: C, sid: String) = {
     val ctrl=sub.asInstanceOf[ResourceRead[R]]
-    ctrl.readRequestWrapper(sid, { _sid => ctrl.fromId(_sid).map(ctrl.read(_)) })
+    ctrl.readRequestWrapper(sid, { _sid => ctrl.fromId(_sid).map(ctrl.read) })
   }
   val read = if(controller.caps contains ResourceCaps.Read) _read _ else (sub: C, sid: String) => Some(methodNotAllowed)
 
   def _write[R](sub: C, sid: String) = {
     val ctrl=sub.asInstanceOf[ResourceWrite[R]]
-    ctrl.writeRequestWrapper(sid, { _sid => ctrl.fromId(_sid).map(ctrl.write(_)) })
+    ctrl.writeRequestWrapper(sid, { _sid => ctrl.fromId(_sid).map(ctrl.write) })
   }
   val write = if(controller.caps contains ResourceCaps.Write) _write _ else (sub: C, sid: String) => Some(methodNotAllowed)
 
   def _update[R](sub: C, sid: String) = {
     val ctrl=sub.asInstanceOf[ResourceUpdate[R]]
-    ctrl.updateRequestWrapper(sid, { _sid => ctrl.fromId(_sid).map(ctrl.update(_)) })
+    ctrl.updateRequestWrapper(sid, { _sid => ctrl.fromId(_sid).map(ctrl.update) })
   }
   val update = if(controller.caps contains ResourceCaps.Update) _update _ else (sub: C, sid: String) => Some(methodNotAllowed)
 
   def _delete[R](sub: C, sid: String) = {
     val ctrl=sub.asInstanceOf[ResourceDelete[R]]
-    ctrl.deleteRequestWrapper(sid, { _sid => ctrl.fromId(_sid).map(ctrl.delete(_)) })
+    ctrl.deleteRequestWrapper(sid, { _sid => ctrl.fromId(_sid).map(ctrl.delete) })
   }
   val delete = if(controller.caps contains ResourceCaps.Delete) _delete _  else (sub: C, sid: String) => Some(methodNotAllowed)
 
