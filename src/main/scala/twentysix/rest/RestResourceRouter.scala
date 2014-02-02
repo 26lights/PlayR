@@ -141,16 +141,7 @@ class ResourceWrapperGenerator[C<:Controller with Resource](val controller: C) {
 }
 
 
-class RestResourceRouter[C<:Controller with Resource](val resourceWrapper: ResourceWrapperGenerator[C]#ResourceWrapper) extends RestRouter{
-
-  protected var _prefix: String = ""
-
-  def setPrefix(newPrefix: String) = {
-    _prefix = newPrefix
-  }
-
-  def prefix = _prefix
-  def documentation = Nil
+class RestResourceRouter[C<:Controller with Resource](val resourceWrapper: ResourceWrapperGenerator[C]#ResourceWrapper) extends RestRouter with SimpleRouter{
 
   private val methodNotAllowed = Action { Results.MethodNotAllowed }
   private val IdExpression = "^/([^/]+)/?$".r
@@ -177,53 +168,25 @@ class RestResourceRouter[C<:Controller with Resource](val resourceWrapper: Resou
 
   def routeResources(root: String) = Seq(resourceWrapper.routeResources(root))
 
-  def routes = new AbstractPartialFunction[RequestHeader, Handler] {
-    override def applyOrElse[A <: RequestHeader, B>: Handler]( requestHeader: A, default: A => B) = {
-      if(requestHeader.path.startsWith(_prefix)) {
-        val path = requestHeader.path.drop(_prefix.length())
-        val method = requestHeader.method
-
-        path match {
-          case SubResourceExpression(subPrefix, id, subPath) =>
-            resourceWrapper.handleRoute(requestHeader, _prefix.length(), subPrefix, id, subPath).getOrElse(default(requestHeader))
-          case "" | "/" => method match {
-            case "GET"     => resourceWrapper.list()
-            case "POST"    => resourceWrapper.create()
-            case "OPTIONS" => rootOptionsRoutingHandler()
-            case _         => methodNotAllowed
-          }
-          case IdExpression(sid) => { method match {
-            case "GET"     => resourceWrapper.read(sid)
-            case "PUT"     => resourceWrapper.write(sid)
-            case "DELETE"  => resourceWrapper.delete(sid)
-            case "PATCH"   => resourceWrapper.update(sid)
-            case "OPTIONS" => resourceWrapper.fromId(sid).map(res => idOptionsRoutingHandler())
-            case _         => resourceWrapper.fromId(sid).map(res => methodNotAllowed)
-          }}.getOrElse(default(requestHeader))
-          case _  => default(requestHeader)
-        }
-      } else {
-        default(requestHeader)
+  def routeRequest(requestHeader: RequestHeader, path: String, method: String) = {
+    path match {
+      case SubResourceExpression(subPrefix, id, subPath) =>
+        resourceWrapper.handleRoute(requestHeader, _prefix.length(), subPrefix, id, subPath)
+      case "" | "/" => method match {
+        case "GET"     => Some(resourceWrapper.list())
+        case "POST"    => Some(resourceWrapper.create())
+        case "OPTIONS" => Some(rootOptionsRoutingHandler())
+        case _         => Some(methodNotAllowed)
       }
-    }
-
-    def isDefinedAt(requestHeader: RequestHeader): Boolean = {
-      if(requestHeader.path.startsWith(_prefix)) {
-        val path = requestHeader.path.drop(_prefix.length())
-        val method = requestHeader.method
-
-        (path, method, resourceWrapper.wrappedController.caps) match {
-          case (SubResourceExpression(_, _, _), _, caps) if caps contains ResourceCaps.Child => true
-          case (_, "GET", caps) if caps contains ResourceCaps.Read => true
-          case (_, "POST", caps) if caps contains ResourceCaps.Create => true
-          case (IdExpression(_), "PUT", caps) if caps contains ResourceCaps.Write => true
-          case (IdExpression(_), "DELETE", caps) if caps contains ResourceCaps.Delete => true
-          case (IdExpression(_), "PATCH", caps) if caps contains ResourceCaps.Update => true
-          case _     => false
-        }
-      } else {
-        false
-      }
+      case IdExpression(sid) => { method match {
+        case "GET"     => resourceWrapper.read(sid)
+        case "PUT"     => resourceWrapper.write(sid)
+        case "DELETE"  => resourceWrapper.delete(sid)
+        case "PATCH"   => resourceWrapper.update(sid)
+        case "OPTIONS" => resourceWrapper.fromId(sid).map(res => idOptionsRoutingHandler())
+        case _         => resourceWrapper.fromId(sid).map(res => methodNotAllowed)
+      }}
+      case _  => None
     }
   }
 }
