@@ -25,7 +25,8 @@ case class ResourceAction(name: String, method: String) extends Resource {
 /**
  * Define the conversion from an url id to a real object
  */
-trait IdentifiedResource[R] extends Resource{
+trait BaseIdentifiedResource extends Resource{
+  type ResourceType
   caps += ResourceCaps.Identity
 
   def toNumber[N](id: String, f: String => N): Option[N] = {
@@ -36,33 +37,39 @@ trait IdentifiedResource[R] extends Resource{
   def toInt(id: String) = toNumber(id, _.toInt)
   def toLong(id: String) = toNumber(id, _.toLong)
 
-  def fromId(id: String): Option[R]
+  def fromId(id: String): Option[ResourceType]
 
   def requestWrapper(sid: String, block: (String => Option[EssentialAction])): Option[EssentialAction] = block(sid)
 }
+trait IdentifiedResource[R] extends BaseIdentifiedResource {
+  type ResourceType = R
+}
+
 
 /**
  * Respond to HTTP GET method
  */
-trait ResourceRead[R] extends IdentifiedResource[R] {
+trait BaseResourceRead extends BaseIdentifiedResource {
   caps+=ResourceCaps.Read
 
-  def read(id: R): EssentialAction
+  def read(id: ResourceType): EssentialAction
   def list(): EssentialAction
 
   def readRequestWrapper(sid: String, block: (String => Option[EssentialAction])): Option[EssentialAction] = requestWrapper(sid, block)
 }
+trait ResourceRead[R] extends BaseResourceRead with IdentifiedResource[R]
 
 /**
  * Respond to HTTP PUT method
  */
-trait ResourceWrite[R] extends IdentifiedResource[R]{
+trait BaseResourceWrite extends BaseIdentifiedResource{
   caps+=ResourceCaps.Write
 
-  def write(id: R): EssentialAction
+  def write(id: ResourceType): EssentialAction
 
   def writeRequestWrapper(sid: String, block: (String => Option[EssentialAction])): Option[EssentialAction] = requestWrapper(sid, block)
 }
+trait ResourceWrite[R] extends BaseResourceWrite with IdentifiedResource[R]
 
 /**
  * Respond to HTTP POST method
@@ -76,35 +83,40 @@ trait ResourceCreate extends Resource{
 /**
  * Respond to HTTP DELETE method
  */
-trait ResourceDelete[R] extends IdentifiedResource[R]{
+trait BaseResourceDelete extends BaseIdentifiedResource{
   caps+=ResourceCaps.Delete
 
-  def delete(id: R): EssentialAction
+  def delete(id: ResourceType): EssentialAction
 
   def deleteRequestWrapper(sid: String, block: (String => Option[EssentialAction])): Option[EssentialAction] = requestWrapper(sid, block)
 }
+trait ResourceDelete[R] extends BaseResourceDelete with IdentifiedResource[R]
+
 
 /**
  * Respond to HTTP PATCH method
  */
-trait ResourceUpdate[R] extends IdentifiedResource[R]{
+trait BaseResourceUpdate extends BaseIdentifiedResource{
   caps+=ResourceCaps.Update
 
-  def update(id: R): EssentialAction
+  def update(id: ResourceType): EssentialAction
 
   def updateRequestWrapper(sid: String, block: (String => Option[EssentialAction])): Option[EssentialAction] = requestWrapper(sid, block)
 }
+trait ResourceUpdate[R] extends BaseResourceUpdate with IdentifiedResource[R]
+
 
 
 /**
  * Define link to other resources accessible via a sub paths
  */
-trait ResourceRoutes[R] extends IdentifiedResource[R] {
+trait BaseResourceRoutes extends BaseIdentifiedResource {
   caps+=ResourceCaps.Parent
 
-  def RouteMap = ResourceRouteMap[R]()
-  val routeMap: ResourceRouteMap[R]
+  def RouteMap = ResourceRouteMap[ResourceType]()
+  val routeMap: ResourceRouteMap[ResourceType]
 }
+trait ResourceRoutes[R] extends BaseResourceRoutes with IdentifiedResource[R]
 
 /**
  * Can create new instances tailored for a specific parent resource
