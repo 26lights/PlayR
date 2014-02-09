@@ -6,55 +6,6 @@ import play.api.http.HeaderNames.ALLOW
 import scala.runtime.AbstractPartialFunction
 import scala.language.implicitConversions
 
-case class ResourceRouteMap[R](routeMap: Map[String, ResourceRouteMap[R]#Routing] = Map[String, ResourceRouteMap[R]#Routing]()) {
-  sealed trait Routing {
-    def routing(id: R, requestHeader: RequestHeader, prefix: String): Option[Handler]
-    def routeInfo(path: String): RestRouteInfo
-  }
-
-  class ResourceRouting[C<:Controller with Resource](val router: RestResourceRouter[C]) extends Routing{
-    def routing(id: R, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
-      Router.Include {
-        router.setPrefix(prefix)
-        router
-      }.unapply(requestHeader)
-    }
-    def routeInfo(path: String) = router.resourceWrapper.routeResources(path)
-  }
-
-  class ControllerRouting[C<:Controller with SubResource[R, C]](val controller: C) extends Routing{
-    val resourceWrapperGenerator = new ResourceWrapperGenerator(controller)
-    val resourceWrapper = resourceWrapperGenerator.forController(controller)
-    def routing(id: R, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
-      Router.Include {
-        val router = new RestResourceRouter(resourceWrapperGenerator.forController(controller.withParent(id)))
-        router.setPrefix(prefix)
-        router
-      }.unapply(requestHeader)
-    }
-    def routeInfo(path: String) = resourceWrapper.routeResources(path)
-  }
-
-  class ActionRouting(val method: String, val f: R => EssentialAction) extends Routing {
-    def routing(id: R, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
-        if (method==requestHeader.method) Some(f(id))
-        else Some(Action { Results.MethodNotAllowed })
-    }
-    def routeInfo(path: String) = RestRouteInfo(path, ResourceAction(path, method), Seq())
-  }
-
-
-  def add(t: (String, ResourceRouteMap[R]#Routing)) = this.copy(routeMap = this.routeMap + t )
-
-  def add[C<:Controller with Resource](route: String, router: RestResourceRouter[C]): ResourceRouteMap[R] =
-    this.add(route-> new ResourceRouting(router))
-  def add[C<:Controller with SubResource[R, C]](route: String, controller: C): ResourceRouteMap[R] =
-    this.add(route-> new ControllerRouting(controller))
-  def add(route: String, method: String, f: (R => EssentialAction)): ResourceRouteMap[R] =
-    this.add(route-> new ActionRouting(method, f))
-
-}
-
 class ResourceWrapperGenerator[C<:Controller with Resource](val controller: C) {
   private var methodNotAllowed = Action { Results.MethodNotAllowed }
 
@@ -139,9 +90,26 @@ class ResourceWrapperGenerator[C<:Controller with Resource](val controller: C) {
     def routeResources(path: String) = routeResourcesImpl(wrappedController, path)
   }
 }
+trait IdentifiedResourceWrapper[T] {
+  type ResultType
+  def fromId(obj: T, sid: String): Option[ResultType]
+}
+trait IdentifiedResourceWrapperDefault {
+  implicit def defaultImpl[T] = new IdentifiedResourceWrapper[T]{
+    type ResultType = Any
+    def fromId(obj: T, sid: String) = None
+  }
+}
+object IdentifiedResourceWrapper extends IdentifiedResourceWrapperDefault{
+  implicit def identifiedResourceImpl[T<:BaseIdentifiedResource] = new IdentifiedResourceWrapper[T]{
+    type ResultType = T#ResourceType
+    def fromId(obj: T, sid: String) = obj.fromId(sid)
+  }
+}
 
 
-class RestResourceRouter[C<:Controller with Resource](val resourceWrapper: ResourceWrapperGenerator[C]#ResourceWrapper) extends RestRouter with SimpleRouter{
+class RestResourceRouter[C<:Controller with Resource: IdentifiedResourceWrapper]
+(val resourceWrapper: ResourceWrapperGenerator[C]#ResourceWrapper) extends RestRouter with SimpleRouter{
 
   private val methodNotAllowed = Action { Results.MethodNotAllowed }
   private val IdExpression = "^/([^/]+)/?$".r
