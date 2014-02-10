@@ -1,14 +1,10 @@
+package twentysix.rest
+
 import play.api.mvc.RequestHeader
 import play.api.mvc.Handler
-import twentysix.rest.RestRouteInfo
 import play.api.mvc.Controller
-import twentysix.rest.Resource
-import twentysix.rest.RestResourceRouter
 import play.core.Router
-import twentysix.rest.SubResource
-import twentysix.rest.ResourceWrapperGenerator
 import play.api.mvc.EssentialAction
-import twentysix.rest.ResourceAction
 import play.api.mvc.Action
 import play.api.mvc.Results
 
