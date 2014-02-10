@@ -90,6 +90,11 @@ class ResourceWrapperGenerator[C<:Controller with Resource](val controller: C) {
     def routeResources(path: String) = routeResourcesImpl(wrappedController, path)
   }
 }
+
+trait ResourceWrapperBase {
+  val methodNotAllowed = Action { Results.MethodNotAllowed }
+}
+
 trait IdentifiedResourceWrapper[T] {
   type ResultType
   def fromId(obj: T, sid: String): Option[ResultType]
@@ -104,6 +109,82 @@ object IdentifiedResourceWrapper extends IdentifiedResourceWrapperDefault{
   implicit def identifiedResourceImpl[T<:BaseIdentifiedResource] = new IdentifiedResourceWrapper[T]{
     type ResultType = T#ResourceType
     def fromId(obj: T, sid: String) = obj.fromId(sid)
+  }
+}
+
+trait ReadResourceWrapper[T] extends ResourceWrapperBase{
+  def read(obj: T, sid: String): Option[EssentialAction]
+  def list(obj: T): EssentialAction
+}
+object ReadResourceWrapper{
+  implicit def readResourceImpl[T<:BaseResourceRead] = new ReadResourceWrapper[T]{
+    def read(obj: T, sid: String) = obj.fromId(sid).map(obj.read(_))
+    def list(obj: T): EssentialAction = obj.list
+  }
+  implicit def identifiedResourceImpl[T<:BaseIdentifiedResource] = new ReadResourceWrapper[T]{
+    def read(obj: T, sid: String) = obj.fromId(sid).map(_ => methodNotAllowed)
+    def list(obj: T) = methodNotAllowed
+  }
+  implicit def defaultImpl[T] = new ReadResourceWrapper[T]{
+    def read(obj: T, sid: String) = None
+    def list(obj: T) = methodNotAllowed
+  }
+}
+
+trait WriteResourceWrapper[T] extends ResourceWrapperBase{
+  def write(obj: T, sid: String): Option[EssentialAction]
+}
+object WriteResourceWrapper{
+  implicit def writeResourceImpl[T<:BaseResourceWrite] = new WriteResourceWrapper[T]{
+    def write(obj: T, sid: String) = obj.fromId(sid).map(obj.write(_))
+  }
+  implicit def identifiedResourceImpl[T<:BaseIdentifiedResource] = new WriteResourceWrapper[T]{
+    def write(obj: T, sid: String) = obj.fromId(sid).map(_ => methodNotAllowed)
+  }
+  implicit def defaultImpl[T] = new WriteResourceWrapper[T]{
+    def write(obj: T, sid: String) = None
+  }
+}
+
+trait UpdateResourceWrapper[T] extends ResourceWrapperBase{
+  def update(obj: T, sid: String): Option[EssentialAction]
+}
+object UpdateResourceWrapper{
+  implicit def updateResourceImpl[T<:BaseResourceUpdate] = new UpdateResourceWrapper[T]{
+    def update(obj: T, sid: String) = obj.fromId(sid).map(obj.update(_))
+  }
+  implicit def identifiedResourceImpl[T<:BaseIdentifiedResource] = new UpdateResourceWrapper[T]{
+    def update(obj: T, sid: String) = obj.fromId(sid).map(_ => methodNotAllowed)
+  }
+  implicit def defaultImpl[T] = new UpdateResourceWrapper[T]{
+    def update(obj: T, sid: String) = None
+  }
+}
+
+trait DeleteResourceWrapper[T] extends ResourceWrapperBase{
+  def delete(obj: T, sid: String): Option[EssentialAction]
+}
+object DeleteResourceWrapper{
+  implicit def deleteResourceImpl[T<:BaseResourceDelete] = new DeleteResourceWrapper[T]{
+    def delete(obj: T, sid: String) = obj.fromId(sid).map(obj.delete(_))
+  }
+  implicit def identifiedResourceImpl[T<:BaseIdentifiedResource] = new DeleteResourceWrapper[T]{
+    def delete(obj: T, sid: String) = obj.fromId(sid).map(_ => methodNotAllowed)
+  }
+  implicit def defaultImpl[T] = new DeleteResourceWrapper[T]{
+    def delete(obj: T, sid: String) = None
+  }
+}
+
+trait CreateResourceWrapper[T] extends ResourceWrapperBase{
+  def create(obj: T): EssentialAction
+}
+object CreateResourceWrapper{
+  implicit def createResourceImpl[T<:ResourceCreate] = new CreateResourceWrapper[T]{
+    def create(obj: T) = obj.create
+  }
+  implicit def defaultImpl[T] = new CreateResourceWrapper[T]{
+    def create(obj: T) = methodNotAllowed
   }
 }
 
