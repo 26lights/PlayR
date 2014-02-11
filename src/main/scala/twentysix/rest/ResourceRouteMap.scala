@@ -7,6 +7,7 @@ import play.core.Router
 import play.api.mvc.EssentialAction
 import play.api.mvc.Action
 import play.api.mvc.Results
+import play.api.Logger
 
 case class ResourceRouteMap[R](routeMap: Map[String, ResourceRouteMap[R]#Routing] = Map[String, ResourceRouteMap[R]#Routing]()) {
   sealed trait Routing {
@@ -14,27 +15,25 @@ case class ResourceRouteMap[R](routeMap: Map[String, ResourceRouteMap[R]#Routing
     def routeInfo(path: String): RestRouteInfo
   }
 
-  class ResourceRouting[C<:Controller with Resource](val router: RestResourceRouter[C]) extends Routing{
+  class SubResourceRouting(val router: SubRestResourceRouter[R, _]) extends Routing{
     def routing(id: R, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
       Router.Include {
-        router.setPrefix(prefix)
-        router
+        val subRouter = router.withParent(id)
+        subRouter.setPrefix(prefix)
+        subRouter
       }.unapply(requestHeader)
     }
-    def routeInfo(path: String) = router.resourceWrapper.routeResources(path)
+    def routeInfo(path: String) = router.routerRouteResource(path)
   }
 
-  class ControllerRouting[C<:Controller with SubResource[R, C]](val controller: C) extends Routing{
-    val resourceWrapperGenerator = new ResourceWrapperGenerator(controller)
-    val resourceWrapper = resourceWrapperGenerator.forController(controller)
+  class ResourceRouting(val router: RestResourceRouter[_]) extends Routing{
     def routing(id: R, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
       Router.Include {
-        val router = new RestResourceRouter(resourceWrapperGenerator.forController(controller.withParent(id)))
         router.setPrefix(prefix)
         router
       }.unapply(requestHeader)
     }
-    def routeInfo(path: String) = resourceWrapper.routeResources(path)
+    def routeInfo(path: String) = router.routerRouteResource(path)
   }
 
   class ActionRouting(val method: String, val f: R => EssentialAction) extends Routing {
@@ -48,10 +47,10 @@ case class ResourceRouteMap[R](routeMap: Map[String, ResourceRouteMap[R]#Routing
 
   def add(t: (String, ResourceRouteMap[R]#Routing)) = this.copy(routeMap = this.routeMap + t )
 
-  def add[C<:Controller with Resource](route: String, router: RestResourceRouter[C]): ResourceRouteMap[R] =
+  def add(route: String, router: SubRestResourceRouter[R, _]): ResourceRouteMap[R] =
+    this.add(route-> new SubResourceRouting(router))
+  def add(route: String, router: RestResourceRouter[_]): ResourceRouteMap[R] =
     this.add(route-> new ResourceRouting(router))
-  def add[C<:Controller with SubResource[R, C]](route: String, controller: C): ResourceRouteMap[R] =
-    this.add(route-> new ControllerRouting(controller))
   def add(route: String, method: String, f: (R => EssentialAction)): ResourceRouteMap[R] =
     this.add(route-> new ActionRouting(method, f))
 
