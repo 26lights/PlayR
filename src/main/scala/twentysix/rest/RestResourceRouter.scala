@@ -123,11 +123,11 @@ object ReadResourceWrapper{
   }
   implicit def identifiedResourceImpl[T<:BaseIdentifiedResource] = new ReadResourceWrapper[T]{
     def read(obj: T, sid: String) = obj.fromId(sid).map(_ => methodNotAllowed)
-    def list(obj: T) = methodNotAllowed
+    def list(obj: T) = Action { Results.Ok("coucou")}//methodNotAllowed
   }
   implicit def defaultImpl[T] = new ReadResourceWrapper[T]{
     def read(obj: T, sid: String) = None
-    def list(obj: T) = methodNotAllowed
+    def list(obj: T) = Action { Results.Ok("default")}//methodNotAllowed
   }
 }
 
@@ -188,14 +188,40 @@ object CreateResourceWrapper{
   }
 }
 
+trait RouteResourceWrapper[T] extends ResourceWrapperBase{
+  def handleRoute(obj: T, requestHeader: RequestHeader, prefixLength: Int, subPrefix: String, sid: String, subPath: String)
+}
+object RouteResourceWrapper{
+  implicit def createResourceImpl[T<:BaseResourceRoutes] = new RouteResourceWrapper[T]{
+    def handleRoute(obj: T, requestHeader: RequestHeader, prefixLength: Int, subPrefix: String, sid: String, subPath: String) = {
+      for {
+        action <- obj.routeMap.routeMap.get(subPath)
+        id <- obj.fromId(sid)
+        res <- action.routing(id, requestHeader, requestHeader.path.take(prefixLength+subPrefix.length()))
+      } yield res
+    }
+  }
+  implicit def defaultImpl[T] = new RouteResourceWrapper[T]{
+    def handleRoute(obj: T, requestHeader: RequestHeader, prefixLength: Int, subPrefix: String, sid: String, subPath: String) = None
+  }
+}
 
-class RestResourceRouter[C<:Controller with Resource: IdentifiedResourceWrapper]
+
+class RestResourceRouter[C<:Controller with Resource: IdentifiedResourceWrapper: ReadResourceWrapper: WriteResourceWrapper: UpdateResourceWrapper: DeleteResourceWrapper: CreateResourceWrapper: RouteResourceWrapper]
 (val resourceWrapper: ResourceWrapperGenerator[C]#ResourceWrapper) extends RestRouter with SimpleRouter{
 
   private val methodNotAllowed = Action { Results.MethodNotAllowed }
   private val IdExpression = "^/([^/]+)/?$".r
   private val SubResourceExpression = "^(/([^/]+)/([^/]+)).*$".r
-
+  
+  val identifiedResourceWrapper = implicitly[IdentifiedResourceWrapper[C]]
+  val readResourceWrapper = implicitly[ReadResourceWrapper[C]]
+  val writeResourceWrapper = implicitly[WriteResourceWrapper[C]]
+  val updateResourceWrapper = implicitly[UpdateResourceWrapper[C]]
+  val deleteResourceWrapper = implicitly[DeleteResourceWrapper[C]]
+  val createResourceWrapper = implicitly[CreateResourceWrapper[C]]
+  val routeResourceWrapper = implicitly[RouteResourceWrapper[C]]
+  
   private val ROOT_OPTIONS = Map(
     ResourceCaps.Read   -> "GET",
     ResourceCaps.Create -> "POST"
@@ -222,8 +248,8 @@ class RestResourceRouter[C<:Controller with Resource: IdentifiedResourceWrapper]
       case SubResourceExpression(subPrefix, id, subPath) =>
         resourceWrapper.handleRoute(requestHeader, _prefix.length(), subPrefix, id, subPath)
       case "" | "/" => method match {
-        case "GET"     => Some(resourceWrapper.list())
-        case "POST"    => Some(resourceWrapper.create())
+        case "GET"     => Some(resourceWrapper.list)
+        case "POST"    => Some(resourceWrapper.create)
         case "OPTIONS" => Some(rootOptionsRoutingHandler())
         case _         => Some(methodNotAllowed)
       }
