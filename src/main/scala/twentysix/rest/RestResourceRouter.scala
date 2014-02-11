@@ -112,12 +112,14 @@ object DeleteResourceWrapper extends IdentifiedDeleteResourceWrapper{
 trait CreateResourceWrapper[T] extends ResourceWrapperBase{
   def create(obj: T): EssentialAction
 }
-object CreateResourceWrapper{
-  implicit def createResourceImpl[T<:ResourceCreate] = new CreateResourceWrapper[T]{
-    def create(obj: T) = obj.create
-  }
+trait DefaultCreateResourceWrapper {
   implicit def defaultImpl[T] = new CreateResourceWrapper[T]{
     def create(obj: T) = methodNotAllowed
+  }
+}
+object CreateResourceWrapper extends DefaultCreateResourceWrapper{
+  implicit def createResourceImpl[T<:ResourceCreate] = new CreateResourceWrapper[T]{
+    def create(obj: T) = obj.create
   }
 }
 
