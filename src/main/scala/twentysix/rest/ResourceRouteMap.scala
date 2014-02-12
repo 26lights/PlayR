@@ -8,6 +8,7 @@ import play.api.mvc.EssentialAction
 import play.api.mvc.Action
 import play.api.mvc.Results
 import play.api.Logger
+import scala.reflect.runtime.universe._
 
 case class ResourceRouteMap[R](routeMap: Map[String, ResourceRouteMap[R]#Routing] = Map[String, ResourceRouteMap[R]#Routing]()) {
   sealed trait Routing {
@@ -36,12 +37,12 @@ case class ResourceRouteMap[R](routeMap: Map[String, ResourceRouteMap[R]#Routing
     def routeInfo(path: String) = router.routerRouteResource(path)
   }
 
-  class ActionRouting(val method: String, val f: R => EssentialAction) extends Routing {
+  class ActionRouting[F<:EssentialAction:TypeTag](val method: String, val f: Function1[R, F]) extends Routing {
     def routing(id: R, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
         if (method==requestHeader.method) Some(f(id))
         else Some(Action { Results.MethodNotAllowed })
     }
-    def routeInfo(path: String) = RestRouteInfo(path, ResourceAction(path, method), Seq())
+    def routeInfo(path: String) = RestRouteInfo(path, ResourceAction(path, method), typeOf[F], ResourceCaps.ValueSet(ResourceCaps.Action), Seq())
   }
 
 
@@ -51,9 +52,9 @@ case class ResourceRouteMap[R](routeMap: Map[String, ResourceRouteMap[R]#Routing
     this.add(route-> new SubResourceRouting(router))
   def add(route: String, router: RestResourceRouter[_]): ResourceRouteMap[R] =
     this.add(route-> new ResourceRouting(router))
-  def add(route: String, method: String, f: (R => EssentialAction)): ResourceRouteMap[R] =
+  def add[F<:EssentialAction:TypeTag](route: String, method: String, f: Function1[R, F]): ResourceRouteMap[R] =
     this.add(route-> new ActionRouting(method, f))
-  def add[C<:Controller with SubResource[R, C]: IdentifiedResourceWrapper: ReadResourceWrapper: WriteResourceWrapper: UpdateResourceWrapper: DeleteResourceWrapper: CreateResourceWrapper: RouteResourceWrapper](route: String, controller: C): ResourceRouteMap[R] =
+  def add[C<:Controller with SubResource[R, C]: TypeTag: IdentifiedResourceWrapper: ReadResourceWrapper: WriteResourceWrapper: UpdateResourceWrapper: DeleteResourceWrapper: CreateResourceWrapper: RouteResourceWrapper](route: String, controller: C): ResourceRouteMap[R] =
     this.add(route-> new SubResourceRouting(new SubRestResourceRouter[R, C](controller)))
 }
 

@@ -5,6 +5,11 @@ import play.api.mvc._
 import play.api.http.HeaderNames.ALLOW
 import scala.runtime.AbstractPartialFunction
 import scala.language.implicitConversions
+import scala.reflect.runtime.universe._
+import play.api.Logger
+import scala.annotation.Annotation
+import scala.annotation.ClassfileAnnotation
+import scala.annotation.StaticAnnotation
 
 
 sealed trait ResourceWrapperBase {
@@ -130,12 +135,12 @@ object CreateResourceWrapper extends DefaultCreateResourceWrapper{
 
 trait RouteResourceWrapper[T] extends ResourceWrapperBase{
   def handleRoute(obj: T, requestHeader: RequestHeader, prefixLength: Int, subPrefix: String, sid: String, subPath: String): Option[Handler]
-  def routeResources(obj: T, root: String): RestRouteInfo
+  def routeResources(obj: T): Seq[RestRouteInfo]
 }
 trait DefaultRouteResourceWrapper {
   implicit def defaultImpl[T<:Resource] = new RouteResourceWrapper[T] with DefaultCaps{
     def handleRoute(obj: T, requestHeader: RequestHeader, prefixLength: Int, subPrefix: String, sid: String, subPath: String) = None
-    def routeResources(obj: T, root: String) = RestRouteInfo(root, obj, Seq())
+    def routeResources(obj: T) = Seq()
   }
 }
 object RouteResourceWrapper extends DefaultRouteResourceWrapper{
@@ -147,12 +152,13 @@ object RouteResourceWrapper extends DefaultRouteResourceWrapper{
         res <- action.routing(id, requestHeader, requestHeader.path.take(prefixLength+subPrefix.length()))
       } yield res
     }
-    def routeResources(obj: T, root: String) = RestRouteInfo(root, obj, obj.routeMap.routeMap.map { t => t._2.routeInfo(t._1) }.toSeq )
+    def routeResources(obj: T) = obj.routeMap.routeMap.map { t => t._2.routeInfo(t._1) }.toSeq
     val caps = ResourceCaps.ValueSet(ResourceCaps.Parent)
   }
 }
 
-class RestResourceRouter[C<:Controller with Resource: IdentifiedResourceWrapper: ReadResourceWrapper: WriteResourceWrapper: UpdateResourceWrapper: DeleteResourceWrapper: CreateResourceWrapper: RouteResourceWrapper]
+
+class RestResourceRouter[C<:Controller with Resource: TypeTag: IdentifiedResourceWrapper: ReadResourceWrapper: WriteResourceWrapper: UpdateResourceWrapper: DeleteResourceWrapper: CreateResourceWrapper: RouteResourceWrapper]
     (val controller: C) extends RestRouter with SimpleRouter{
 
   private val methodNotAllowed = Action { Results.MethodNotAllowed }
@@ -173,6 +179,7 @@ class RestResourceRouter[C<:Controller with Resource: IdentifiedResourceWrapper:
              deleteResourceWrapper.caps ++
              createResourceWrapper.caps ++
              routeResourceWrapper.caps
+  val controllerType = typeOf[C]
 
   private val ROOT_OPTIONS = Map(
     ResourceCaps.Read   -> "GET",
@@ -194,7 +201,7 @@ class RestResourceRouter[C<:Controller with Resource: IdentifiedResourceWrapper:
   def idOptionsRoutingHandler = optionsRoutingHandler(ID_OPTIONS)
 
   def routeResources(root: String) = Seq(routerRouteResource(root))
-  def routerRouteResource(root: String) = routeResourceWrapper.routeResources(controller, root)
+  def routerRouteResource(root: String) = RestRouteInfo(root, controller, controllerType, caps, routeResourceWrapper.routeResources(controller))
 
   def routeRequest(requestHeader: RequestHeader, path: String, method: String) = {
     path match {
@@ -219,7 +226,7 @@ class RestResourceRouter[C<:Controller with Resource: IdentifiedResourceWrapper:
   }
 }
 
-class SubRestResourceRouter[P, C<:Controller with SubResource[P, C]: IdentifiedResourceWrapper: ReadResourceWrapper: WriteResourceWrapper: UpdateResourceWrapper: DeleteResourceWrapper: CreateResourceWrapper: RouteResourceWrapper]
+class SubRestResourceRouter[P, C<:Controller with SubResource[P, C]: TypeTag: IdentifiedResourceWrapper: ReadResourceWrapper: WriteResourceWrapper: UpdateResourceWrapper: DeleteResourceWrapper: CreateResourceWrapper: RouteResourceWrapper]
     (controller: C) extends RestResourceRouter[C](controller){
   override val caps = ResourceCaps.ValueSet(ResourceCaps.Child) ++
                       identifiedResourceWrapper.caps ++

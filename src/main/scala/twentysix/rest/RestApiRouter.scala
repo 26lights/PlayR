@@ -5,6 +5,7 @@ import play.api.mvc._
 import scala.runtime.AbstractPartialFunction
 import scala.language.implicitConversions
 import play.api.Logger
+import scala.reflect.runtime.universe._
 
 trait ApiRouter extends RestRouter with SimpleRouter{
   def routeMap: Map[String, RestRouter]
@@ -33,11 +34,11 @@ trait ApiRouter extends RestRouter with SimpleRouter{
 case class RestApiRouter(routeMap: Map[String, RestRouter] = Map()) extends ApiRouter {
   def add(t: (String, RestRouter)) = this.copy(routeMap=routeMap + t)
   def add(apiRouter: RestApiRouter) = this.copy(routeMap=routeMap ++ apiRouter.routeMap)
-  def add[C<:Controller with Resource: IdentifiedResourceWrapper: ReadResourceWrapper: WriteResourceWrapper: UpdateResourceWrapper: DeleteResourceWrapper: CreateResourceWrapper: RouteResourceWrapper](resource: C): RestApiRouter = this.add(resource.name -> new RestResourceRouter(resource))
+  def add[C<:Controller with Resource: TypeTag: IdentifiedResourceWrapper: ReadResourceWrapper: WriteResourceWrapper: UpdateResourceWrapper: DeleteResourceWrapper: CreateResourceWrapper: RouteResourceWrapper](resource: C): RestApiRouter = this.add(resource.name -> new RestResourceRouter(resource))
 
   def :+(t: (String, RestRouter)) = this.add(t)
   def :+(apiRouter: RestApiRouter) = this.add(apiRouter)
-  def :+[C<:Controller with Resource: IdentifiedResourceWrapper: ReadResourceWrapper: WriteResourceWrapper: UpdateResourceWrapper: DeleteResourceWrapper: CreateResourceWrapper: RouteResourceWrapper](resource: C) = this.add(resource)
+  def :+[C<:Controller with Resource: TypeTag: IdentifiedResourceWrapper: ReadResourceWrapper: WriteResourceWrapper: UpdateResourceWrapper: DeleteResourceWrapper: CreateResourceWrapper: RouteResourceWrapper](resource: C) = this.add(resource)
 }
 object RestApiRouter {
   implicit def controller2Router(t: (String, Controller with Resource)) = RestApiRouter(Map(t._1 -> new RestResourceRouter(t._2)))
