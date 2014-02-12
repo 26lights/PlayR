@@ -35,13 +35,13 @@ trait ReadResourceWrapper[T] extends ResourceWrapperBase{
 trait DefaultReadResourceWrapper {
   implicit def defaultImpl[T] = new ReadResourceWrapper[T]{
     def read(obj: T, sid: String) = None
-        def list(obj: T) = methodNotAllowed
+    def list(obj: T) = methodNotAllowed
   }
 }
 trait IdentifiedReadResourceWrapper extends DefaultReadResourceWrapper{
   implicit def identifiedResourceImpl[T<:BaseIdentifiedResource] = new ReadResourceWrapper[T]{
     def read(obj: T, sid: String) = obj.fromId(sid).map(_ => methodNotAllowed)
-        def list(obj: T) = methodNotAllowed
+    def list(obj: T) = methodNotAllowed
   }
 }
 object ReadResourceWrapper extends IdentifiedReadResourceWrapper{
