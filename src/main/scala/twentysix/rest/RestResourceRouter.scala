@@ -130,11 +130,14 @@ class RestResourceRouter[C<:BaseResource: ResourceWrapper](val controller: C) ex
   private val SubResourceExpression = "^(/([^/]+)/([^/]+)).*$".r
 
   val wrapper = implicitly[ResourceWrapper[C]]
-  val caps = wrapper.readWrapper.caps ++
+  def caps = wrapper.readWrapper.caps ++
              wrapper.writeWrapper.caps ++
              wrapper.updateWrapper.caps ++
              wrapper.deleteWrapper.caps ++
-             wrapper.createWrapper.caps
+             wrapper.createWrapper.caps ++ {
+               if(routeMap.routeMap.isEmpty) ResourceCaps.ValueSet.empty
+               else ResourceCaps.ValueSet(ResourceCaps.Parent)
+             }
 
   private val ROOT_OPTIONS = Map(
     ResourceCaps.Read   -> "GET",
