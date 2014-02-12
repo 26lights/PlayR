@@ -23,7 +23,7 @@ sealed trait DefaultCaps{
 
 sealed trait DefaultApply[T<:BaseResource] extends DefaultCaps {
   this: ResourceWrapperBase  =>
-  def apply(obj: T, sid: String) = obj.fromId(sid).map(_ => methodNotAllowed)
+  def apply(obj: T, sid: String) = obj.requestWrapper(sid, obj.fromId(_).map(_ => methodNotAllowed))
 }
 
 trait ReadResourceWrapper[T] extends ResourceWrapperBase{
@@ -37,7 +37,7 @@ trait DefaultReadResourceWrapper{
 }
 object ReadResourceWrapper extends DefaultReadResourceWrapper{
   implicit def readResourceImpl[T<:BaseResourceRead] = new ReadResourceWrapper[T]{
-    def apply(obj: T, sid: String) = obj.fromId(sid).map(obj.read(_))
+    def apply(obj: T, sid: String) = obj.readRequestWrapper(sid, obj.fromId(_).map(obj.read(_)))
     def list(obj: T): EssentialAction = obj.list
     val caps = ResourceCaps.ValueSet(ResourceCaps.Read)
   }
@@ -51,7 +51,7 @@ trait DefaultWriteResourceWrapper {
 }
 object WriteResourceWrapper extends DefaultWriteResourceWrapper{
   implicit def writeResourceImpl[T<:BaseResourceWrite] = new WriteResourceWrapper[T]{
-    def apply(obj: T, sid: String) = obj.fromId(sid).map(obj.write(_))
+    def apply(obj: T, sid: String) = obj.writeRequestWrapper(sid, obj.fromId(_).map(obj.write(_)))
     val caps = ResourceCaps.ValueSet(ResourceCaps.Write)
   }
 }
@@ -65,7 +65,7 @@ trait DefaultUpdateResourceWrapper {
 }
 object UpdateResourceWrapper extends DefaultUpdateResourceWrapper{
   implicit def updateResourceImpl[T<:BaseResourceUpdate] = new UpdateResourceWrapper[T]{
-    def apply(obj: T, sid: String) = obj.fromId(sid).map(obj.update(_))
+    def apply(obj: T, sid: String) = obj.updateRequestWrapper(sid, obj.fromId(_).map(obj.update(_)))
     val caps = ResourceCaps.ValueSet(ResourceCaps.Update)
   }
 }
@@ -78,7 +78,7 @@ trait DefaultDeleteResourceWrapper{
 }
 object DeleteResourceWrapper extends DefaultDeleteResourceWrapper{
   implicit def deleteResourceImpl[T<:BaseResourceDelete] = new DeleteResourceWrapper[T]{
-    def apply(obj: T, sid: String) = obj.fromId(sid).map(obj.delete(_))
+    def apply(obj: T, sid: String) = obj.deleteRequestWrapper(sid, obj.fromId(_).map(obj.delete(_)))
     val caps = ResourceCaps.ValueSet(ResourceCaps.Delete)
   }
 }
