@@ -90,16 +90,6 @@ trait BaseResourceUpdate extends BaseResource{
 trait ResourceUpdate[R] extends BaseResourceUpdate with Resource[R]
 
 
-
-/**
- * Define link to other resources accessible via a sub paths
- */
-trait BaseResourceRoutes extends BaseResource {
-  def RouteMap = ResourceRouteMap[ResourceType]()
-  val routeMap: ResourceRouteMap[ResourceType]
-}
-trait ResourceRoutes[R] extends BaseResourceRoutes with Resource[R]
-
 /**
  * Can create new instances tailored for a specific parent resource
  */
