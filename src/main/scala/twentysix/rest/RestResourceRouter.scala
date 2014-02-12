@@ -201,7 +201,7 @@ class RestResourceRouter[C<:Controller with Resource: TypeTag: IdentifiedResourc
   def idOptionsRoutingHandler = optionsRoutingHandler(ID_OPTIONS)
 
   def routeResources(root: String) = Seq(routerRouteResource(root))
-  def routerRouteResource(root: String) = RestRouteInfo(root, controller, controllerType, caps, routeResourceWrapper.routeResources(controller))
+  def routerRouteResource(root: String) = ApiRestRouteInfo(root, controller.name, controllerType, caps, routeResourceWrapper.routeResources(controller))
 
   def routeRequest(requestHeader: RequestHeader, path: String, method: String) = {
     path match {

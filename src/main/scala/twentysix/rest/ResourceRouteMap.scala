@@ -37,12 +37,12 @@ case class ResourceRouteMap[R](routeMap: Map[String, ResourceRouteMap[R]#Routing
     def routeInfo(path: String) = router.routerRouteResource(path)
   }
 
-  class ActionRouting[F<:EssentialAction:TypeTag](val method: String, val f: Function1[R, F]) extends Routing {
+  class ActionRouting[F<:EssentialAction:TypeTag](val method: String, val f: Function1[R, F], route: String) extends Routing {
     def routing(id: R, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
         if (method==requestHeader.method) Some(f(id))
         else Some(Action { Results.MethodNotAllowed })
     }
-    def routeInfo(path: String) = RestRouteInfo(path, ResourceAction(path, method), typeOf[F], ResourceCaps.ValueSet(ResourceCaps.Action), Seq())
+    def routeInfo(path: String) = ActionRestRouteInfo(path, route, typeOf[F], ResourceCaps.ValueSet(ResourceCaps.Action), Seq(), method)
   }
 
 
@@ -53,7 +53,7 @@ case class ResourceRouteMap[R](routeMap: Map[String, ResourceRouteMap[R]#Routing
   def add(route: String, router: RestResourceRouter[_]): ResourceRouteMap[R] =
     this.add(route-> new ResourceRouting(router))
   def add[F<:EssentialAction:TypeTag](route: String, method: String, f: Function1[R, F]): ResourceRouteMap[R] =
-    this.add(route-> new ActionRouting(method, f))
+    this.add(route-> new ActionRouting(method, f, route))
   def add[C<:Controller with SubResource[R, C]: TypeTag: IdentifiedResourceWrapper: ReadResourceWrapper: WriteResourceWrapper: UpdateResourceWrapper: DeleteResourceWrapper: CreateResourceWrapper: RouteResourceWrapper](route: String, controller: C): ResourceRouteMap[R] =
     this.add(route-> new SubResourceRouting(new SubRestResourceRouter[R, C](controller)))
 }

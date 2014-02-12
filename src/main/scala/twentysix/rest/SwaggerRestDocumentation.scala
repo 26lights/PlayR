@@ -45,38 +45,37 @@ class SwaggerRestDocumentation(val restApi: RestRouter, val apiVersion: String="
     info.path -> info
   }.toMap
 
-  def apiList = apiMap.map { mapping =>
-    SwaggerResource(mapping._1, mapping._2.resource.getClass.getName)
+  def apiList = apiMap.map { case(path, info) =>
+    SwaggerResource(path, info.resourceType.toString())
   }
 
   def operationList(path: String, routeInfo: RestRouteInfo, parameters: Seq[SwaggerParameter] = Seq()): List[SwaggerApi] = {
     var res = List[SwaggerApi]()
-    val resource = routeInfo.resource
-    var ops = resource.caps.flatMap{ caps =>
+    var ops = routeInfo.caps.flatMap{ caps =>
       caps match {
-        case ResourceCaps.Read   => Some(SwaggerOperation.simple("GET", s"List ${resource.name}", parameters))
-        case ResourceCaps.Create => Some(SwaggerOperation.simple("POST", s"Create ${resource.name}", parameters))
-        case ResourceCaps.Action => Some(SwaggerOperation.simple(resource.asInstanceOf[ResourceAction].method, resource.name, parameters))
+        case ResourceCaps.Read   => Some(SwaggerOperation.simple("GET", s"List ${routeInfo.name}", parameters))
+        case ResourceCaps.Create => Some(SwaggerOperation.simple("POST", s"Create ${routeInfo.name}", parameters))
+        case ResourceCaps.Action => Some(SwaggerOperation.simple(routeInfo.asInstanceOf[ActionRestRouteInfo].method, routeInfo.name, parameters))
         case _ => None
       }
     }
     if(!ops.isEmpty)
       res = res :+ new SwaggerApi(path, "Generic operations", ops)
 
-    val subParams = parameters :+ SwaggerParameter(s"${resource.name}_id", s"identified ${resource.name}")
-    ops = resource.caps.flatMap{ caps =>
+    val subParams = parameters :+ SwaggerParameter(s"${routeInfo.name}_id", s"identified ${routeInfo.name}")
+    ops = routeInfo.caps.flatMap{ caps =>
       caps match {
-        case ResourceCaps.Read   => Some(SwaggerOperation.simple("GET", s"Read ${resource.name}", subParams))
-        case ResourceCaps.Write  => Some(SwaggerOperation.simple("PUT", s"Write ${resource.name}", subParams))
-        case ResourceCaps.Update => Some(SwaggerOperation.simple("PATCH", s"Update ${resource.name}", subParams))
-        case ResourceCaps.Delete => Some(SwaggerOperation.simple("DELETE", s"Delete ${resource.name}", subParams))
+        case ResourceCaps.Read   => Some(SwaggerOperation.simple("GET", s"Read ${routeInfo.name}", subParams))
+        case ResourceCaps.Write  => Some(SwaggerOperation.simple("PUT", s"Write ${routeInfo.name}", subParams))
+        case ResourceCaps.Update => Some(SwaggerOperation.simple("PATCH", s"Update ${routeInfo.name}", subParams))
+        case ResourceCaps.Delete => Some(SwaggerOperation.simple("DELETE", s"Delete ${routeInfo.name}", subParams))
         case _ => None
       }
     }
     if(!ops.isEmpty)
-      res = res :+ new SwaggerApi(s"$path/{${resource.name}_id}", "Operations on identified resource", ops)
+      res = res :+ new SwaggerApi(s"$path/{${routeInfo.name}_id}", "Operations on identified resource", ops)
 
-    res ++ routeInfo.subResources.flatMap(info => operationList(s"$path/{${resource.name}_id}/${info.path}", info, subParams))
+    res ++ routeInfo.subResources.flatMap(info => operationList(s"$path/{${routeInfo.name}_id}/${info.name}", info, subParams))
   }
 
   def resourceListing = Action {
