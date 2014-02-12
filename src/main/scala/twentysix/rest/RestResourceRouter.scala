@@ -207,6 +207,6 @@ class RestResourceRouter[C<:Controller with Resource: IdentifiedResourceWrapper:
 }
 
 class SubRestResourceRouter[P, C<:Controller with SubResource[P, C]: IdentifiedResourceWrapper: ReadResourceWrapper: WriteResourceWrapper: UpdateResourceWrapper: DeleteResourceWrapper: CreateResourceWrapper: RouteResourceWrapper]
-    (controller: C) extends RestResourceRouter(controller){
+    (controller: C) extends RestResourceRouter[C](controller){
   def withParent(id: P) = new SubRestResourceRouter[P, C](controller.withParent(id))
 }
