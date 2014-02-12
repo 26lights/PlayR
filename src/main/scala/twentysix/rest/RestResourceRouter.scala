@@ -157,29 +157,53 @@ object RouteResourceWrapper extends DefaultRouteResourceWrapper{
   }
 }
 
+trait ResourceWrapper[T]{
+  val identifiedWrapper: IdentifiedResourceWrapper[T]
+  val readWrapper: ReadResourceWrapper[T]
+  val writeWrapper: WriteResourceWrapper[T]
+  val updateWrapper: UpdateResourceWrapper[T]
+  val deleteWrapper: DeleteResourceWrapper[T]
+  val createWrapper: CreateResourceWrapper[T]
+  val routeWrapper: RouteResourceWrapper[T]
+  val controllerType: Type
+}
+object ResourceWrapper {
+  implicit def resourceWrapperImpl[C<:Controller with Resource:
+                                   TypeTag:
+                                   IdentifiedResourceWrapper:
+                                   ReadResourceWrapper:
+                                   WriteResourceWrapper:
+                                   UpdateResourceWrapper:
+                                   DeleteResourceWrapper:
+                                   CreateResourceWrapper:
+                                   RouteResourceWrapper] =
+    new ResourceWrapper[C] {
+    val identifiedWrapper = implicitly[IdentifiedResourceWrapper[C]]
+    val readWrapper = implicitly[ReadResourceWrapper[C]]
+    val writeWrapper = implicitly[WriteResourceWrapper[C]]
+    val updateWrapper = implicitly[UpdateResourceWrapper[C]]
+    val deleteWrapper = implicitly[DeleteResourceWrapper[C]]
+    val createWrapper = implicitly[CreateResourceWrapper[C]]
+    val routeWrapper = implicitly[RouteResourceWrapper[C]]
+    val controllerType = typeOf[C]
+  }
+}
 
-class RestResourceRouter[C<:Controller with Resource: TypeTag: IdentifiedResourceWrapper: ReadResourceWrapper: WriteResourceWrapper: UpdateResourceWrapper: DeleteResourceWrapper: CreateResourceWrapper: RouteResourceWrapper]
+class RestResourceRouter[C<:Controller with Resource: ResourceWrapper]
     (val controller: C) extends RestRouter with SimpleRouter{
 
   private val methodNotAllowed = Action { Results.MethodNotAllowed }
   private val IdExpression = "^/([^/]+)/?$".r
   private val SubResourceExpression = "^(/([^/]+)/([^/]+)).*$".r
 
-  val identifiedResourceWrapper = implicitly[IdentifiedResourceWrapper[C]]
-  val readResourceWrapper = implicitly[ReadResourceWrapper[C]]
-  val writeResourceWrapper = implicitly[WriteResourceWrapper[C]]
-  val updateResourceWrapper = implicitly[UpdateResourceWrapper[C]]
-  val deleteResourceWrapper = implicitly[DeleteResourceWrapper[C]]
-  val createResourceWrapper = implicitly[CreateResourceWrapper[C]]
-  val routeResourceWrapper = implicitly[RouteResourceWrapper[C]]
-  val caps = identifiedResourceWrapper.caps ++
-             readResourceWrapper.caps ++
-             writeResourceWrapper.caps ++
-             updateResourceWrapper.caps ++
-             deleteResourceWrapper.caps ++
-             createResourceWrapper.caps ++
-             routeResourceWrapper.caps
-  val controllerType = typeOf[C]
+  val wrapper = implicitly[ResourceWrapper[C]]
+  val caps = wrapper.identifiedWrapper.caps ++
+             wrapper.readWrapper.caps ++
+             wrapper.writeWrapper.caps ++
+             wrapper.updateWrapper.caps ++
+             wrapper.deleteWrapper.caps ++
+             wrapper.createWrapper.caps ++
+             wrapper.routeWrapper.caps
 
   private val ROOT_OPTIONS = Map(
     ResourceCaps.Read   -> "GET",
@@ -201,40 +225,39 @@ class RestResourceRouter[C<:Controller with Resource: TypeTag: IdentifiedResourc
   def idOptionsRoutingHandler = optionsRoutingHandler(ID_OPTIONS)
 
   def routeResources(root: String) = Seq(routerRouteResource(root))
-  def routerRouteResource(root: String) = ApiRestRouteInfo(root, controller.name, controllerType, caps, routeResourceWrapper.routeResources(controller))
+  def routerRouteResource(root: String) = ApiRestRouteInfo(root, controller.name, wrapper.controllerType, caps, wrapper.routeWrapper.routeResources(controller))
 
   def routeRequest(requestHeader: RequestHeader, path: String, method: String) = {
     path match {
       case SubResourceExpression(subPrefix, id, subPath) =>
-        routeResourceWrapper.handleRoute(controller, requestHeader, _prefix.length(), subPrefix, id, subPath)
+        wrapper.routeWrapper.handleRoute(controller, requestHeader, _prefix.length(), subPrefix, id, subPath)
       case "" | "/" => method match {
-        case "GET"     => Some(readResourceWrapper.list(controller))
-        case "POST"    => Some(createResourceWrapper(controller))
+        case "GET"     => Some(wrapper.readWrapper.list(controller))
+        case "POST"    => Some(wrapper.createWrapper(controller))
         case "OPTIONS" => Some(rootOptionsRoutingHandler())
         case _         => Some(methodNotAllowed)
       }
       case IdExpression(sid) => { method match {
-        case "GET"     => readResourceWrapper(controller, sid)
-        case "PUT"     => writeResourceWrapper(controller, sid)
-        case "DELETE"  => deleteResourceWrapper(controller, sid)
-        case "PATCH"   => updateResourceWrapper(controller, sid)
-        case "OPTIONS" => identifiedResourceWrapper(controller, sid).map(res => idOptionsRoutingHandler())
-        case _         => identifiedResourceWrapper(controller, sid).map(res => methodNotAllowed)
+        case "GET"     => wrapper.readWrapper(controller, sid)
+        case "PUT"     => wrapper.writeWrapper(controller, sid)
+        case "DELETE"  => wrapper.deleteWrapper(controller, sid)
+        case "PATCH"   => wrapper.updateWrapper(controller, sid)
+        case "OPTIONS" => wrapper.identifiedWrapper(controller, sid).map(res => idOptionsRoutingHandler())
+        case _         => wrapper.identifiedWrapper(controller, sid).map(res => methodNotAllowed)
       }}
       case _  => None
     }
   }
 }
 
-class SubRestResourceRouter[P, C<:Controller with SubResource[P, C]: TypeTag: IdentifiedResourceWrapper: ReadResourceWrapper: WriteResourceWrapper: UpdateResourceWrapper: DeleteResourceWrapper: CreateResourceWrapper: RouteResourceWrapper]
-    (controller: C) extends RestResourceRouter[C](controller){
+class SubRestResourceRouter[P, C<:Controller with SubResource[P, C]: ResourceWrapper] (controller: C) extends RestResourceRouter[C](controller){
   override val caps = ResourceCaps.ValueSet(ResourceCaps.Child) ++
-                      identifiedResourceWrapper.caps ++
-                      readResourceWrapper.caps ++
-                      writeResourceWrapper.caps ++
-                      updateResourceWrapper.caps ++
-                      deleteResourceWrapper.caps ++
-                      createResourceWrapper.caps ++
-                      routeResourceWrapper.caps
+                      wrapper.identifiedWrapper.caps ++
+                      wrapper.readWrapper.caps ++
+                      wrapper.writeWrapper.caps ++
+                      wrapper.updateWrapper.caps ++
+                      wrapper.deleteWrapper.caps ++
+                      wrapper.createWrapper.caps ++
+                      wrapper.routeWrapper.caps
   def withParent(id: P) = new SubRestResourceRouter[P, C](controller.withParent(id))
 }

@@ -54,7 +54,7 @@ case class ResourceRouteMap[R](routeMap: Map[String, ResourceRouteMap[R]#Routing
     this.add(route-> new ResourceRouting(router))
   def add[F<:EssentialAction:TypeTag](route: String, method: String, f: Function1[R, F]): ResourceRouteMap[R] =
     this.add(route-> new ActionRouting(method, f, route))
-  def add[C<:Controller with SubResource[R, C]: TypeTag: IdentifiedResourceWrapper: ReadResourceWrapper: WriteResourceWrapper: UpdateResourceWrapper: DeleteResourceWrapper: CreateResourceWrapper: RouteResourceWrapper](route: String, controller: C): ResourceRouteMap[R] =
+  def add[C<:Controller with SubResource[R, C]: ResourceWrapper](route: String, controller: C): ResourceRouteMap[R] =
     this.add(route-> new SubResourceRouting(new SubRestResourceRouter[R, C](controller)))
 }
 
