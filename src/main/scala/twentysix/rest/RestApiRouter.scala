@@ -34,12 +34,12 @@ trait ApiRouter extends RestRouter with SimpleRouter{
 case class RestApiRouter(routeMap: Map[String, RestRouter] = Map()) extends ApiRouter {
   def add(t: (String, RestRouter)) = this.copy(routeMap=routeMap + t)
   def add(apiRouter: RestApiRouter) = this.copy(routeMap=routeMap ++ apiRouter.routeMap)
-  def add[C<:Controller with Resource: ResourceWrapper](resource: C): RestApiRouter = this.add(resource.name -> new RestResourceRouter(resource))
+  def add[C<:BaseResource: ResourceWrapper](resource: C): RestApiRouter = this.add(resource.name -> new RestResourceRouter(resource))
 
   def :+(t: (String, RestRouter)) = this.add(t)
   def :+(apiRouter: RestApiRouter) = this.add(apiRouter)
-  def :+[C<:Controller with Resource: ResourceWrapper](resource: C) = this.add(resource)
+  def :+[C<:BaseResource: ResourceWrapper](resource: C) = this.add(resource)
 }
 object RestApiRouter {
-  implicit def controller2Router(t: (String, Controller with Resource)) = RestApiRouter(Map(t._1 -> new RestResourceRouter(t._2)))
+  implicit def controller2Router(t: (String, BaseResource)) = RestApiRouter(Map(t._1 -> new RestResourceRouter(t._2)))
 }

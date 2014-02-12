@@ -10,17 +10,14 @@ import play.api.Logger
 
 object ResourceCaps extends Enumeration {
   type ResourceCaps = Value
-  val Identity, Read, Write, Create, Delete, Update, Parent, Child, Action = Value
-}
-
-trait Resource{
-  def name: String
+  val Read, Write, Create, Delete, Update, Parent, Child, Action = Value
 }
 
 /**
  * Define the conversion from an url id to a real object
  */
-trait BaseIdentifiedResource extends Resource{
+trait BaseResource extends Controller{
+  def name: String
   type ResourceType
 
   def toNumber[N](id: String, f: String => N): Option[N] = {
@@ -35,7 +32,8 @@ trait BaseIdentifiedResource extends Resource{
 
   def requestWrapper(sid: String, block: (String => Option[EssentialAction])): Option[EssentialAction] = block(sid)
 }
-trait IdentifiedResource[R] extends BaseIdentifiedResource {
+
+trait Resource[R] extends BaseResource {
   type ResourceType = R
 }
 
@@ -43,68 +41,69 @@ trait IdentifiedResource[R] extends BaseIdentifiedResource {
 /**
  * Respond to HTTP GET method
  */
-trait BaseResourceRead extends BaseIdentifiedResource {
+trait BaseResourceRead extends BaseResource {
 
   def read(id: ResourceType): EssentialAction
   def list(): EssentialAction
 
   def readRequestWrapper(sid: String, block: (String => Option[EssentialAction])): Option[EssentialAction] = requestWrapper(sid, block)
 }
-trait ResourceRead[R] extends BaseResourceRead with IdentifiedResource[R]
+trait ResourceRead[R] extends BaseResourceRead with Resource[R]
 
 /**
  * Respond to HTTP PUT method
  */
-trait BaseResourceWrite extends BaseIdentifiedResource{
+trait BaseResourceWrite extends BaseResource{
   def write(id: ResourceType): EssentialAction
 
   def writeRequestWrapper(sid: String, block: (String => Option[EssentialAction])): Option[EssentialAction] = requestWrapper(sid, block)
 }
-trait ResourceWrite[R] extends BaseResourceWrite with IdentifiedResource[R]
+trait ResourceWrite[R] extends BaseResourceWrite with Resource[R]
 
 /**
  * Respond to HTTP POST method
  */
-trait ResourceCreate extends Resource{
+trait BaseResourceCreate extends BaseResource{
   def create(): EssentialAction
 }
+trait ResourceCreate[R] extends BaseResourceCreate with Resource[R]
 
 /**
  * Respond to HTTP DELETE method
  */
-trait BaseResourceDelete extends BaseIdentifiedResource{
+trait BaseResourceDelete extends BaseResource{
   def delete(id: ResourceType): EssentialAction
 
   def deleteRequestWrapper(sid: String, block: (String => Option[EssentialAction])): Option[EssentialAction] = requestWrapper(sid, block)
 }
-trait ResourceDelete[R] extends BaseResourceDelete with IdentifiedResource[R]
+trait ResourceDelete[R] extends BaseResourceDelete with Resource[R]
 
 
 /**
  * Respond to HTTP PATCH method
  */
-trait BaseResourceUpdate extends BaseIdentifiedResource{
+trait BaseResourceUpdate extends BaseResource{
   def update(id: ResourceType): EssentialAction
 
   def updateRequestWrapper(sid: String, block: (String => Option[EssentialAction])): Option[EssentialAction] = requestWrapper(sid, block)
 }
-trait ResourceUpdate[R] extends BaseResourceUpdate with IdentifiedResource[R]
+trait ResourceUpdate[R] extends BaseResourceUpdate with Resource[R]
 
 
 
 /**
  * Define link to other resources accessible via a sub paths
  */
-trait BaseResourceRoutes extends BaseIdentifiedResource {
+trait BaseResourceRoutes extends BaseResource {
   def RouteMap = ResourceRouteMap[ResourceType]()
   val routeMap: ResourceRouteMap[ResourceType]
 }
-trait ResourceRoutes[R] extends BaseResourceRoutes with IdentifiedResource[R]
+trait ResourceRoutes[R] extends BaseResourceRoutes with Resource[R]
 
 /**
  * Can create new instances tailored for a specific parent resource
  */
-trait SubResource[P, S<:SubResource[P, S]] extends Resource {
+trait SubResource[P, S<:SubResource[P, S]]{
   self: S =>
   def withParent(parentResource: P): S
 }
@@ -115,19 +114,14 @@ trait SubResource[P, S<:SubResource[P, S]] extends Resource {
 //---- Shortcut traits ----
 //-------------------------
 
-trait RestController[R] extends Controller
-                           with IdentifiedResource[R]
-
-trait RestReadController[R] extends Controller
-                               with IdentifiedResource[R]
+trait RestReadController[R] extends Resource[R]
                                with ResourceRead[R]
 
 /**
  * Read and write controller: implements GET, POST and PATCH for partial updates
  */
-trait RestRwController[R] extends Controller
-                             with IdentifiedResource[R]
-                             with ResourceCreate
+trait RestRwController[R] extends Resource[R]
+                             with ResourceCreate[R]
                              with ResourceRead[R]
                              with ResourceUpdate[R]
 
@@ -140,9 +134,8 @@ trait RestRwdController[R] extends RestRwController[R]
 /**
  * Classic rest controller: handle GET, POST, PUT and DELETE http methods
  */
-trait RestCrudController[R] extends Controller
-                               with IdentifiedResource[R]
-                               with ResourceCreate
+trait RestCrudController[R] extends Resource[R]
+                               with ResourceCreate[R]
                                with ResourceRead[R]
                                with ResourceDelete[R]
                                with ResourceWrite[R]
