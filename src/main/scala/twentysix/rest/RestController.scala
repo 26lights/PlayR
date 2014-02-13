@@ -90,15 +90,6 @@ trait BaseResourceUpdate extends BaseResource{
 trait ResourceUpdate[R] extends BaseResourceUpdate with Resource[R]
 
 
-/**
- * Can create new instances tailored for a specific parent resource
- */
-trait SubResource[P, S<:SubResource[P, S]]{
-  self: S =>
-  def withParent(parentResource: P): S
-}
-
-
 
 //-------------------------
 //---- Shortcut traits ----

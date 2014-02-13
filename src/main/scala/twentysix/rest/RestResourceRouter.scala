@@ -124,20 +124,68 @@ object ResourceWrapper {
   }
 }
 
-class RestResourceRouter[C<:BaseResource: ResourceWrapper](val controller: C) extends RestRouter with SimpleRouter{
-  private val methodNotAllowed = Action { Results.MethodNotAllowed }
-  private val IdExpression = "^/([^/]+)/?$".r
-  private val SubResourceExpression = "^(/([^/]+)/([^/]+)).*$".r
+sealed trait Routing[C<:BaseResource] {
+  def routing(controller: C, id: C#ResourceType, requestHeader: RequestHeader, prefix: String): Option[Handler]
+  def routeInfo(path: String): RestRouteInfo
+}
 
+abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
   val wrapper = implicitly[ResourceWrapper[C]]
   def caps = wrapper.readWrapper.caps ++
              wrapper.writeWrapper.caps ++
              wrapper.updateWrapper.caps ++
              wrapper.deleteWrapper.caps ++
              wrapper.createWrapper.caps ++ {
-               if(routeMap.routeMap.isEmpty) ResourceCaps.ValueSet.empty
+               if(routeMap.isEmpty) ResourceCaps.ValueSet.empty
                else ResourceCaps.ValueSet(ResourceCaps.Parent)
              }
+
+  val name: String
+  var routeMap: Map[String, Routing[C]]
+
+  class SubResourceRouting(val router: SubRestResourceRouter[C#ResourceType, _]) extends Routing[C]{
+    def routing(controller: C, id: C#ResourceType, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
+      Router.Include {
+        val subRouter = router.withParent(id)
+        subRouter.setPrefix(prefix)
+        subRouter
+      }.unapply(requestHeader)
+    }
+    def routeInfo(path: String) = router.routerRouteResource(path)
+  }
+
+  class ResourceRouting(val router: RestResourceRouter[_]) extends Routing[C]{
+    def routing(controller: C, id: C#ResourceType, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
+      Router.Include {
+        router.setPrefix(prefix)
+        router
+      }.unapply(requestHeader)
+    }
+    def routeInfo(path: String) = router.routerRouteResource(path)
+  }
+
+
+  def routeResources(root: String) = Seq(routerRouteResource(root))
+  def routerRouteResource(root: String) = ApiRestRouteInfo(root, name, wrapper.controllerType, caps, subRouteResources)
+  def subRouteResources = routeMap.map { t => t._2.routeInfo(t._1) }.toSeq
+
+  def add(t: (String, Routing[C])): this.type = {
+    routeMap = routeMap + t
+    Logger.debug(s"t: $t  -  routeMap: $routeMap")
+    this
+  }
+
+  def add(route: String, router: SubRestResourceRouter[C#ResourceType, _]): this.type = add(route-> new SubResourceRouting(router))
+  def add(route: String, router: RestResourceRouter[_]): this.type = this.add(route-> new ResourceRouting(router))
+}
+
+class RestResourceRouter[C<:BaseResource: ResourceWrapper](val controller: C, var routeMap: Map[String, Routing[C]]= Map[String, Routing[C]]())
+      extends AbstractRestResourceRouter[C] with RestRouter with SimpleRouter{
+  val name = controller.name
+
+  private val methodNotAllowed = Action { Results.MethodNotAllowed }
+  private val IdExpression = "^/([^/]+)/?$".r
+  private val SubResourceExpression = "^(/([^/]+)/([^/]+)).*$".r
 
   private val ROOT_OPTIONS = Map(
     ResourceCaps.Read   -> "GET",
@@ -158,15 +206,12 @@ class RestResourceRouter[C<:BaseResource: ResourceWrapper](val controller: C) ex
   def rootOptionsRoutingHandler = optionsRoutingHandler(ROOT_OPTIONS)
   def idOptionsRoutingHandler = optionsRoutingHandler(ID_OPTIONS)
 
-  def routeResources(root: String) = Seq(routerRouteResource(root))
-  def routerRouteResource(root: String) = ApiRestRouteInfo(root, controller.name, wrapper.controllerType, caps, subRouteResources)
-  def subRouteResources = routeMap.routeMap.map { t => t._2.routeInfo(t._1) }.toSeq
-
   def handleRoute(requestHeader: RequestHeader, prefixLength: Int, subPrefix: String, sid: String, subPath: String) = {
+    Logger.debug(s"subPath=$subPath routeMap=$routeMap")
     for {
-      action <- routeMap.routeMap.get(subPath)
+      action <- routeMap.get(subPath)
       id <- controller.fromId(sid)
-      res <- action.routing(id, requestHeader, requestHeader.path.take(prefixLength+subPrefix.length()))
+      res <- action.routing(controller, id, requestHeader, requestHeader.path.take(prefixLength+subPrefix.length()))
     } yield res
   }
 
@@ -192,37 +237,31 @@ class RestResourceRouter[C<:BaseResource: ResourceWrapper](val controller: C) ex
     }
   }
 
-  var routeMap = ResourceRouteMap[BaseResource#ResourceType]()
-
-  def add(t: (String, ResourceRouteMap[BaseResource#ResourceType]#Routing)) = {
-    routeMap = routeMap.add(t)
-    this
+  class ActionRouting[F<:EssentialAction:TypeTag](val method: String, val f: Function1[C#ResourceType, F], route: String) extends Routing[C] {
+    def routing(controller: C, id: C#ResourceType, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
+        if (method==requestHeader.method) Some(f(id))
+        else Some(Action { Results.MethodNotAllowed })
+    }
+    def routeInfo(path: String) = ActionRestRouteInfo(path, route, typeOf[F], ResourceCaps.ValueSet(ResourceCaps.Action), Seq(), method)
   }
 
-  def add(route: String, router: SubRestResourceRouter[BaseResource#ResourceType, _])= {
-    routeMap = routeMap.add(route, router)
-    this
-  }
-  def add(route: String, router: RestResourceRouter[_]) = {
-    routeMap = routeMap.add(route, router)
-    this
-  }
-  def add[F<:EssentialAction:TypeTag](route: String, method: String, f: Function1[BaseResource#ResourceType, F]) = {
-    routeMap = routeMap.add(route, method, f)
-    this
-  }
-  def add[C<:BaseResource with SubResource[BaseResource#ResourceType, C]: ResourceWrapper](route: String, controller: C) = {
-    routeMap = routeMap.add(route, controller)
-    this
-  }
+  def add[F<:EssentialAction:TypeTag](route: String, method: String, f: Function1[C#ResourceType, F]): this.type =
+    this.add(route-> new ActionRouting(method, f, route))
 }
 
-class SubRestResourceRouter[P, C<:BaseResource with SubResource[P, C]: ResourceWrapper] (controller: C) extends RestResourceRouter[C](controller){
-  override val caps = ResourceCaps.ValueSet(ResourceCaps.Child) ++
-                      wrapper.readWrapper.caps ++
-                      wrapper.writeWrapper.caps ++
-                      wrapper.updateWrapper.caps ++
-                      wrapper.deleteWrapper.caps ++
-                      wrapper.createWrapper.caps
-  def withParent(id: P) = new SubRestResourceRouter[P, C](controller.withParent(id))
+class SubRestResourceRouter[P, C<:BaseResource: ResourceWrapper](val name: String, val factory: P => C) extends AbstractRestResourceRouter[C]{
+  var routeMap = Map[String, Routing[C]]()
+  override val caps = super.caps ++ ResourceCaps.ValueSet(ResourceCaps.Child)
+  def withParent(id: P) = new RestResourceRouter[C](factory(id), routeMap)
+
+  class ActionRouting[F<:EssentialAction:TypeTag](val method: String, val f: C => Function1[C#ResourceType, F], route: String) extends Routing[C] {
+    def routing(controller: C, id: C#ResourceType, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
+        if (method==requestHeader.method) Some(f(controller)(id))
+        else Some(Action { Results.MethodNotAllowed })
+    }
+    def routeInfo(path: String) = ActionRestRouteInfo(path, route, typeOf[F], ResourceCaps.ValueSet(ResourceCaps.Action), Seq(), method)
+  }
+
+  def add[F<:EssentialAction:TypeTag](route: String, method: String, f: C => Function1[C#ResourceType, F]): this.type =
+    this.add(route-> new ActionRouting(method, f, route))
 }
