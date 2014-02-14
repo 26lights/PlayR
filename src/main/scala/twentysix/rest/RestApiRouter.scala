@@ -10,13 +10,13 @@ import scala.reflect.runtime.universe._
 trait ApiRouter extends RestRouter with SimpleRouter{
   def routeMap: Map[String, RestRouter]
 
-  def routeResources(root: String) = routeMap.flatMap{
+  def routeResources(root: String): Seq[RestRouteInfo] = routeMap.flatMap{
     case (path, router) => router.routeResources(s"$root/$path")
   }.toSeq
 
   private val SubPathExpression = "^(/([^/]+)).*$".r
 
-  def routeRequest(requestHeader: RequestHeader, path: String, method: String) = {
+  def routeRequest(requestHeader: RequestHeader, path: String, method: String): Option[Handler] = {
     path match {
       case SubPathExpression(subPrefix, subPath) => {
         routeMap.get(subPath).flatMap{ router =>
@@ -42,6 +42,7 @@ case class RestApiRouter(routeMap: Map[String, RestRouter] = Map()) extends ApiR
   def :+[C<:BaseResource: ResourceWrapper](router: RestResourceRouter[C]) = this.add(router)
   def :+[C<:BaseResource: ResourceWrapper](resource: C) = this.add(resource)
 }
+
 object RestApiRouter {
   implicit def controller2Router[C<:BaseResource: ResourceWrapper](t: (String, C)) = RestApiRouter(Map(t._1 -> new RestResourceRouter[C](t._2)))
 }
