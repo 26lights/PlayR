@@ -186,7 +186,13 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
   }
 
   def add(route: String, router: SubRestResourceRouter[C#ResourceType, _]): this.type = add(route-> new SubResourceRouting(router))
+  def add(router: SubRestResourceRouter[C#ResourceType, _]): this.type = add(router.name, router)
+
   def add(route: String, router: RestResourceRouter[_]): this.type = this.add(route-> new ResourceRouting(router))
+  def add(router: RestResourceRouter[_]): this.type = add(router.name, router)
+
+  def add[S<:BaseResource : ResourceWrapper](route: String, factory: C#ResourceType => S): this.type =
+    this.add(route, new SubRestResourceRouter(route, factory))
 }
 
 class RestResourceRouter[C<:BaseResource: ResourceWrapper](val controller: C, var routeMap: Map[String, Routing[C]]= Map[String, Routing[C]]())
