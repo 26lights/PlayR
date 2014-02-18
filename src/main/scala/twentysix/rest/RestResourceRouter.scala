@@ -23,7 +23,9 @@ sealed trait DefaultCaps{
 
 sealed trait DefaultApply[T<:BaseResource] extends DefaultCaps {
   this: ResourceWrapperBase  =>
-  def apply(obj: T, sid: String) = obj.requestWrapper(sid, obj.fromId(_).map(_ => methodNotAllowed))
+  def apply(obj: T, sid: String) = obj.requestWrapper {
+    obj.fromId(sid).map(_ => methodNotAllowed)
+  }
 }
 
 trait ReadResourceWrapper[T] extends ResourceWrapperBase{
@@ -37,7 +39,9 @@ trait DefaultReadResourceWrapper{
 }
 object ReadResourceWrapper extends DefaultReadResourceWrapper{
   implicit def readResourceImpl[T<:BaseResourceRead] = new ReadResourceWrapper[T]{
-    def apply(obj: T, sid: String) = obj.readRequestWrapper(sid, obj.fromId(_).map(obj.read(_)))
+    def apply(obj: T, sid: String) = obj.readRequestWrapper {
+      obj.fromId(sid).map(obj.read)
+    }
     def list(obj: T): EssentialAction = obj.list
     val caps = ResourceCaps.ValueSet(ResourceCaps.Read)
   }
@@ -51,7 +55,9 @@ trait DefaultWriteResourceWrapper {
 }
 object WriteResourceWrapper extends DefaultWriteResourceWrapper{
   implicit def writeResourceImpl[T<:BaseResourceWrite] = new WriteResourceWrapper[T]{
-    def apply(obj: T, sid: String) = obj.writeRequestWrapper(sid, obj.fromId(_).map(obj.write(_)))
+    def apply(obj: T, sid: String) = obj.writeRequestWrapper {
+      obj.fromId(sid).map(obj.write)
+    }
     val caps = ResourceCaps.ValueSet(ResourceCaps.Write)
   }
 }
@@ -65,7 +71,9 @@ trait DefaultUpdateResourceWrapper {
 }
 object UpdateResourceWrapper extends DefaultUpdateResourceWrapper{
   implicit def updateResourceImpl[T<:BaseResourceUpdate] = new UpdateResourceWrapper[T]{
-    def apply(obj: T, sid: String) = obj.updateRequestWrapper(sid, obj.fromId(_).map(obj.update(_)))
+    def apply(obj: T, sid: String) = obj.updateRequestWrapper {
+      obj.fromId(sid).map(obj.update)
+    }
     val caps = ResourceCaps.ValueSet(ResourceCaps.Update)
   }
 }
@@ -78,7 +86,9 @@ trait DefaultDeleteResourceWrapper{
 }
 object DeleteResourceWrapper extends DefaultDeleteResourceWrapper{
   implicit def deleteResourceImpl[T<:BaseResourceDelete] = new DeleteResourceWrapper[T]{
-    def apply(obj: T, sid: String) = obj.deleteRequestWrapper(sid, obj.fromId(_).map(obj.delete(_)))
+    def apply(obj: T, sid: String) = obj.deleteRequestWrapper {
+      obj.fromId(sid).map(obj.delete)
+    }
     val caps = ResourceCaps.ValueSet(ResourceCaps.Delete)
   }
 }
@@ -99,28 +109,28 @@ object CreateResourceWrapper extends DefaultCreateResourceWrapper{
 }
 
 trait ResourceWrapper[T]{
-  val readWrapper: ReadResourceWrapper[T]
-  val writeWrapper: WriteResourceWrapper[T]
-  val updateWrapper: UpdateResourceWrapper[T]
-  val deleteWrapper: DeleteResourceWrapper[T]
-  val createWrapper: CreateResourceWrapper[T]
-  val controllerType: Type
+  def readWrapper: ReadResourceWrapper[T]
+  def writeWrapper: WriteResourceWrapper[T]
+  def updateWrapper: UpdateResourceWrapper[T]
+  def deleteWrapper: DeleteResourceWrapper[T]
+  def createWrapper: CreateResourceWrapper[T]
+  def controllerType: Type
 }
 object ResourceWrapper {
-  implicit def resourceWrapperImpl[C<:BaseResource:
-                                   TypeTag:
-                                   ReadResourceWrapper:
-                                   WriteResourceWrapper:
-                                   UpdateResourceWrapper:
-                                   DeleteResourceWrapper:
-                                   CreateResourceWrapper] =
+  implicit def resourceWrapperImpl[C<:BaseResource
+                                     :TypeTag
+                                     :ReadResourceWrapper
+                                     :WriteResourceWrapper
+                                     :UpdateResourceWrapper
+                                     :DeleteResourceWrapper
+                                     :CreateResourceWrapper] =
     new ResourceWrapper[C] {
-    val readWrapper = implicitly[ReadResourceWrapper[C]]
-    val writeWrapper = implicitly[WriteResourceWrapper[C]]
-    val updateWrapper = implicitly[UpdateResourceWrapper[C]]
-    val deleteWrapper = implicitly[DeleteResourceWrapper[C]]
-    val createWrapper = implicitly[CreateResourceWrapper[C]]
-    val controllerType = typeOf[C]
+      val readWrapper = implicitly[ReadResourceWrapper[C]]
+      val writeWrapper = implicitly[WriteResourceWrapper[C]]
+      val updateWrapper = implicitly[UpdateResourceWrapper[C]]
+      val deleteWrapper = implicitly[DeleteResourceWrapper[C]]
+      val createWrapper = implicitly[CreateResourceWrapper[C]]
+      val controllerType = typeOf[C]
   }
 }
 
@@ -199,45 +209,53 @@ class RestResourceRouter[C<:BaseResource: ResourceWrapper](val controller: C, va
   )
 
   def optionsRoutingHandler(map: Map[ResourceCaps.Value, String]) = Action {
-    val options = map.filterKeys( caps contains _).values mkString ","
+    val options = map.filterKeys( caps.contains ).values mkString ","
     Results.Ok.withHeaders(ALLOW -> options)
   }
 
   def rootOptionsRoutingHandler = optionsRoutingHandler(ROOT_OPTIONS)
   def idOptionsRoutingHandler = optionsRoutingHandler(ID_OPTIONS)
 
-  def handleRoute(requestHeader: RequestHeader, prefixLength: Int, subPrefix: String, sid: String, subPath: String) = {
+  def handleRoute(requestHeader: RequestHeader, prefixLength: Int, subPrefix: String, sid: String, subPath: String): Option[Handler] = {
     Logger.debug(s"subPath=$subPath routeMap=$routeMap")
     for {
       action <- routeMap.get(subPath)
       id <- controller.fromId(sid)
-      res <- action.routing(controller, id, requestHeader, requestHeader.path.take(prefixLength+subPrefix.length()))
+      res <- action.routing(
+        controller,
+        id,
+        requestHeader,
+        requestHeader.path.take(prefixLength + subPrefix.length)
+      )
     } yield res
   }
 
-  def routeRequest(requestHeader: RequestHeader, path: String, method: String) = {
+  def routeRequest(requestHeader: RequestHeader, path: String, method: String): Option[Handler] = {
     path match {
       case SubResourceExpression(subPrefix, id, subPath) =>
         handleRoute(requestHeader, _prefix.length(), subPrefix, id, subPath)
+
       case "" | "/" => method match {
         case "GET"     => Some(wrapper.readWrapper.list(controller))
         case "POST"    => Some(wrapper.createWrapper(controller))
         case "OPTIONS" => Some(rootOptionsRoutingHandler())
         case _         => Some(methodNotAllowed)
       }
-      case IdExpression(sid) => { method match {
+
+      case IdExpression(sid) => method match {
         case "GET"     => wrapper.readWrapper(controller, sid)
         case "PUT"     => wrapper.writeWrapper(controller, sid)
         case "DELETE"  => wrapper.deleteWrapper(controller, sid)
         case "PATCH"   => wrapper.updateWrapper(controller, sid)
         case "OPTIONS" => controller.fromId(sid).map(res => idOptionsRoutingHandler())
         case _         => controller.fromId(sid).map(res => methodNotAllowed)
-      }}
-      case _  => None
+      }
+
+      case _ => None
     }
   }
 
-  class ActionRouting[F<:EssentialAction:TypeTag](val method: String, val f: Function1[C#ResourceType, F], route: String) extends Routing[C] {
+  class ActionRouting[F <: EssentialAction:TypeTag](val method: String, val f: Function1[C#ResourceType, F], route: String) extends Routing[C] {
     def routing(controller: C, id: C#ResourceType, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
         if (method==requestHeader.method) Some(f(id))
         else Some(Action { Results.MethodNotAllowed })
@@ -245,21 +263,28 @@ class RestResourceRouter[C<:BaseResource: ResourceWrapper](val controller: C, va
     def routeInfo(path: String) = ActionRestRouteInfo(path, route, typeOf[F], ResourceCaps.ValueSet(ResourceCaps.Action), Seq(), method)
   }
 
-  def add[F<:EssentialAction:TypeTag](route: String, method: String, f: Function1[C#ResourceType, F]): this.type =
+  def add[F <: EssentialAction : TypeTag](route: String, method: String, f: Function1[C#ResourceType, F]): this.type =
     this.add(route-> new ActionRouting(method, f, route))
 }
 
-class SubRestResourceRouter[P, C<:BaseResource: ResourceWrapper](val name: String, val factory: P => C) extends AbstractRestResourceRouter[C]{
+class SubRestResourceRouter[P, C <: BaseResource : ResourceWrapper](val name: String, val factory: P => C) extends AbstractRestResourceRouter[C] {
   var routeMap = Map[String, Routing[C]]()
   override val caps = super.caps ++ ResourceCaps.ValueSet(ResourceCaps.Child)
   def withParent(id: P) = new RestResourceRouter[C](factory(id), routeMap)
 
-  class ActionRouting[F<:EssentialAction:TypeTag](val method: String, val f: C => Function1[C#ResourceType, F], route: String) extends Routing[C] {
+  class ActionRouting[F <: EssentialAction : TypeTag](val method: String, val f: C => Function1[C#ResourceType, F], route: String) extends Routing[C] {
     def routing(controller: C, id: C#ResourceType, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
-        if (method==requestHeader.method) Some(f(controller)(id))
-        else Some(Action { Results.MethodNotAllowed })
+      if (method == requestHeader.method) Some(f(controller)(id))
+      else Some(Action {Results.MethodNotAllowed})
     }
-    def routeInfo(path: String) = ActionRestRouteInfo(path, route, typeOf[F], ResourceCaps.ValueSet(ResourceCaps.Action), Seq(), method)
+
+    def routeInfo(path: String) = ActionRestRouteInfo(
+        path,
+        route,
+        typeOf[F],
+        ResourceCaps.ValueSet(ResourceCaps.Action),
+        Seq(),
+        method)
   }
 
   def add[F<:EssentialAction:TypeTag](route: String, method: String, f: C => Function1[C#ResourceType, F]): this.type =

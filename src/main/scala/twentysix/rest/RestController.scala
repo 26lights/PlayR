@@ -16,7 +16,7 @@ object ResourceCaps extends Enumeration {
 /**
  * Define the conversion from an url id to a real object
  */
-trait BaseResource extends Controller{
+trait BaseResource extends Controller {
   def name: String
   type ResourceType
 
@@ -30,7 +30,7 @@ trait BaseResource extends Controller{
 
   def fromId(id: String): Option[ResourceType]
 
-  def requestWrapper(sid: String, block: (String => Option[EssentialAction])): Option[EssentialAction] = block(sid)
+  def requestWrapper(block: => Option[EssentialAction]): Option[EssentialAction] = block
 }
 
 trait Resource[R] extends BaseResource {
@@ -44,37 +44,37 @@ trait Resource[R] extends BaseResource {
 trait BaseResourceRead extends BaseResource {
 
   def read(id: ResourceType): EssentialAction
-  def list(): EssentialAction
+  def list: EssentialAction
 
-  def readRequestWrapper(sid: String, block: (String => Option[EssentialAction])): Option[EssentialAction] = requestWrapper(sid, block)
+  def readRequestWrapper(block: => Option[EssentialAction]): Option[EssentialAction] = requestWrapper(block)
 }
 trait ResourceRead[R] extends BaseResourceRead with Resource[R]
 
 /**
  * Respond to HTTP PUT method
  */
-trait BaseResourceWrite extends BaseResource{
+trait BaseResourceWrite extends BaseResource {
   def write(id: ResourceType): EssentialAction
 
-  def writeRequestWrapper(sid: String, block: (String => Option[EssentialAction])): Option[EssentialAction] = requestWrapper(sid, block)
+  def writeRequestWrapper(block: => Option[EssentialAction]): Option[EssentialAction] = requestWrapper(block)
 }
 trait ResourceWrite[R] extends BaseResourceWrite with Resource[R]
 
 /**
  * Respond to HTTP POST method
  */
-trait BaseResourceCreate extends BaseResource{
-  def create(): EssentialAction
+trait BaseResourceCreate extends BaseResource {
+  def create: EssentialAction
 }
 trait ResourceCreate[R] extends BaseResourceCreate with Resource[R]
 
 /**
  * Respond to HTTP DELETE method
  */
-trait BaseResourceDelete extends BaseResource{
+trait BaseResourceDelete extends BaseResource {
   def delete(id: ResourceType): EssentialAction
 
-  def deleteRequestWrapper(sid: String, block: (String => Option[EssentialAction])): Option[EssentialAction] = requestWrapper(sid, block)
+  def deleteRequestWrapper(block: => Option[EssentialAction]): Option[EssentialAction] = requestWrapper(block)
 }
 trait ResourceDelete[R] extends BaseResourceDelete with Resource[R]
 
@@ -82,10 +82,10 @@ trait ResourceDelete[R] extends BaseResourceDelete with Resource[R]
 /**
  * Respond to HTTP PATCH method
  */
-trait BaseResourceUpdate extends BaseResource{
+trait BaseResourceUpdate extends BaseResource {
   def update(id: ResourceType): EssentialAction
 
-  def updateRequestWrapper(sid: String, block: (String => Option[EssentialAction])): Option[EssentialAction] = requestWrapper(sid, block)
+  def updateRequestWrapper(block: => Option[EssentialAction]): Option[EssentialAction] = requestWrapper(block)
 }
 trait ResourceUpdate[R] extends BaseResourceUpdate with Resource[R]
 
