@@ -1,5 +1,6 @@
 package twentysix.playr
 
+import scala.language.reflectiveCalls
 import play.core.Router
 import play.api.mvc._
 import play.api.http.HeaderNames.ALLOW
