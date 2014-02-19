@@ -1,4 +1,4 @@
-package twentysix.rest
+package twentysix.playr
 
 import play.core.Router
 import play.api.mvc._
