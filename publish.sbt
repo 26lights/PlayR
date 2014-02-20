@@ -5,7 +5,7 @@ publishTo := {
     ("snapshots", repo + "snapshots")
   else
     ("releases", repo + "releases")
-  Some(Resolver.url(name, new URL(url))(Resolver.ivyStylePatterns))
+  Some(name at url)
 }
 
 credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
