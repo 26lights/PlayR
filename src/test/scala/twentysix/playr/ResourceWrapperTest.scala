@@ -88,25 +88,6 @@ class ResourceWrapperTest extends FunSpec with Matchers {
         getCaps(wrapper) should contain(ResourceCaps.Delete)
       }
     }
-
   }
-
-  class TestController extends Resource[Long] {
-    def fromId(id: String): Option[Long] = ???
-    def name: String = ???
-    def list: play.api.mvc.EssentialAction = ???
-    def read(id: Long): play.api.mvc.EssentialAction = ???
-    def write(id: Long): play.api.mvc.EssentialAction = ???
-    def update(id: Long): play.api.mvc.EssentialAction = ???
-    def delete(id: Long): play.api.mvc.EssentialAction = ???
-    def create: play.api.mvc.EssentialAction = ???
-  }
-
-  class TestControllerRead extends TestController with BaseResourceRead
-  class TestControllerWrite extends TestController with BaseResourceWrite
-  class TestControllerUpdate extends TestController with BaseResourceUpdate
-  class TestControllerDelete extends TestController with BaseResourceDelete
-  class TestControllerCreate extends TestController with BaseResourceCreate
-  class TestControllerAll extends TestController with RestCrudController[Long] with BaseResourceUpdate
 }
 
