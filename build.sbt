@@ -15,6 +15,8 @@ scalacOptions += "-deprecation"
 scalacOptions += "-unchecked"
 
 libraryDependencies ++= Seq (
-  "com.typesafe.play"  %% "play"  % "2.2.1"
+  "com.typesafe.play"  %% "play"  % "2.2.1",
+  // test scope
+  "org.scalatest"         %%  "scalatest"               % "2.0"         % "test"
 )
 
