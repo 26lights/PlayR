@@ -41,53 +41,57 @@ trait Resource[R] extends BaseResource {
 /**
  * Respond to HTTP GET method
  */
-trait BaseResourceRead extends BaseResource {
+trait ResourceRead {
+  this: BaseResource =>
 
   def read(id: ResourceType): EssentialAction
   def list: EssentialAction
 
   def readRequestWrapper(block: => Option[EssentialAction]): Option[EssentialAction] = requestWrapper(block)
 }
-trait ResourceRead[R] extends BaseResourceRead with Resource[R]
 
 /**
  * Respond to HTTP PUT method
  */
-trait BaseResourceWrite extends BaseResource {
+trait ResourceWrite {
+  this: BaseResource =>
+
   def write(id: ResourceType): EssentialAction
 
   def writeRequestWrapper(block: => Option[EssentialAction]): Option[EssentialAction] = requestWrapper(block)
 }
-trait ResourceWrite[R] extends BaseResourceWrite with Resource[R]
 
 /**
  * Respond to HTTP POST method
  */
-trait BaseResourceCreate extends BaseResource {
+trait ResourceCreate {
+  this: BaseResource =>
+
   def create: EssentialAction
 }
-trait ResourceCreate[R] extends BaseResourceCreate with Resource[R]
 
 /**
  * Respond to HTTP DELETE method
  */
-trait BaseResourceDelete extends BaseResource {
+trait ResourceDelete {
+  this: BaseResource =>
+
   def delete(id: ResourceType): EssentialAction
 
   def deleteRequestWrapper(block: => Option[EssentialAction]): Option[EssentialAction] = requestWrapper(block)
 }
-trait ResourceDelete[R] extends BaseResourceDelete with Resource[R]
 
 
 /**
  * Respond to HTTP PATCH method
  */
-trait BaseResourceUpdate extends BaseResource {
+trait ResourceUpdate {
+  this: BaseResource =>
+
   def update(id: ResourceType): EssentialAction
 
   def updateRequestWrapper(block: => Option[EssentialAction]): Option[EssentialAction] = requestWrapper(block)
 }
-trait ResourceUpdate[R] extends BaseResourceUpdate with Resource[R]
 
 
 
@@ -96,27 +100,27 @@ trait ResourceUpdate[R] extends BaseResourceUpdate with Resource[R]
 //-------------------------
 
 trait RestReadController[R] extends Resource[R]
-                               with ResourceRead[R]
+                               with ResourceRead
 
 /**
  * Read and write controller: implements GET, POST and PATCH for partial updates
  */
 trait RestRwController[R] extends Resource[R]
-                             with ResourceCreate[R]
-                             with ResourceRead[R]
-                             with ResourceUpdate[R]
+                             with ResourceCreate
+                             with ResourceRead
+                             with ResourceUpdate
 
 /**
  * Same as RestRWController plus DELETE method
  */
 trait RestRwdController[R] extends RestRwController[R]
-                              with ResourceDelete[R]
+                              with ResourceDelete
 
 /**
  * Classic rest controller: handle GET, POST, PUT and DELETE http methods
  */
 trait RestCrudController[R] extends Resource[R]
-                               with ResourceCreate[R]
-                               with ResourceRead[R]
-                               with ResourceDelete[R]
-                               with ResourceWrite[R]
+                               with ResourceCreate
+                               with ResourceRead
+                               with ResourceDelete
+                               with ResourceWrite

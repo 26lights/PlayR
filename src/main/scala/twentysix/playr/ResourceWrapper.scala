@@ -29,7 +29,7 @@ trait DefaultReadResourceWrapper{
   }
 }
 object ReadResourceWrapper extends DefaultReadResourceWrapper{
-  implicit def readResourceImpl[T<:BaseResourceRead] = new ReadResourceWrapper[T]{
+  implicit def readResourceImpl[T<:BaseResource with ResourceRead] = new ReadResourceWrapper[T]{
     def apply(obj: T, sid: String) = obj.readRequestWrapper {
       obj.fromId(sid).map(obj.read)
     }
@@ -45,7 +45,7 @@ trait DefaultWriteResourceWrapper {
   implicit def defaultImpl[T<:BaseResource] = new WriteResourceWrapper[T] with DefaultApply[T]
 }
 object WriteResourceWrapper extends DefaultWriteResourceWrapper{
-  implicit def writeResourceImpl[T<:BaseResourceWrite] = new WriteResourceWrapper[T]{
+  implicit def writeResourceImpl[T<:BaseResource with ResourceWrite] = new WriteResourceWrapper[T]{
     def apply(obj: T, sid: String) = obj.writeRequestWrapper {
       obj.fromId(sid).map(obj.write)
     }
@@ -61,7 +61,7 @@ trait DefaultUpdateResourceWrapper {
   implicit def defaultImpl[T<:BaseResource] = new UpdateResourceWrapper[T] with DefaultApply[T]
 }
 object UpdateResourceWrapper extends DefaultUpdateResourceWrapper{
-  implicit def updateResourceImpl[T<:BaseResourceUpdate] = new UpdateResourceWrapper[T]{
+  implicit def updateResourceImpl[T<:BaseResource with ResourceUpdate] = new UpdateResourceWrapper[T]{
     def apply(obj: T, sid: String) = obj.updateRequestWrapper {
       obj.fromId(sid).map(obj.update)
     }
@@ -76,7 +76,7 @@ trait DefaultDeleteResourceWrapper{
   implicit def defaultImpl[T<:BaseResource] = new DeleteResourceWrapper[T] with DefaultApply[T]
 }
 object DeleteResourceWrapper extends DefaultDeleteResourceWrapper{
-  implicit def deleteResourceImpl[T<:BaseResourceDelete] = new DeleteResourceWrapper[T]{
+  implicit def deleteResourceImpl[T<:BaseResource with ResourceDelete] = new DeleteResourceWrapper[T]{
     def apply(obj: T, sid: String) = obj.deleteRequestWrapper {
       obj.fromId(sid).map(obj.delete)
     }
@@ -93,7 +93,7 @@ trait DefaultCreateResourceWrapper {
   }
 }
 object CreateResourceWrapper extends DefaultCreateResourceWrapper{
-  implicit def createResourceImpl[T<:BaseResourceCreate] = new CreateResourceWrapper[T]{
+  implicit def createResourceImpl[T<:ResourceCreate] = new CreateResourceWrapper[T]{
     def apply(obj: T) = obj.create
     val caps = ResourceCaps.ValueSet(ResourceCaps.Create)
   }

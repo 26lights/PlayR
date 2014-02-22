@@ -1,19 +1,21 @@
 package twentysix.playr
 
+import play.api.mvc._
+
 class TestController extends Resource[Boolean] {
-  def fromId(id: String): Option[Boolean] = Some(id=="26")
+  def fromId(id: String): Option[Boolean] = if(id=="26") Some(true) else None
   def name: String = "test"
-  def list: play.api.mvc.EssentialAction = ???
-  def read(id: Boolean): play.api.mvc.EssentialAction = ???
-  def write(id: Boolean): play.api.mvc.EssentialAction = ???
-  def update(id: Boolean): play.api.mvc.EssentialAction = ???
-  def delete(id: Boolean): play.api.mvc.EssentialAction = ???
-  def create: play.api.mvc.EssentialAction = ???
+  def list: EssentialAction = Action { Ok("list") }
+  def read(id: Boolean): EssentialAction = Action { Ok("read") }
+  def write(id: Boolean): EssentialAction = Action { NoContent }
+  def update(id: Boolean): EssentialAction = Action { NoContent }
+  def delete(id: Boolean): EssentialAction = Action { NoContent }
+  def create: EssentialAction = Action { NoContent }
 }
 
-class TestControllerRead extends TestController with BaseResourceRead
-class TestControllerWrite extends TestController with BaseResourceWrite
-class TestControllerUpdate extends TestController with BaseResourceUpdate
-class TestControllerDelete extends TestController with BaseResourceDelete
-class TestControllerCreate extends TestController with BaseResourceCreate
-class TestControllerAll extends TestController with RestCrudController[Boolean] with BaseResourceUpdate
+class TestControllerRead extends TestController with ResourceRead
+class TestControllerWrite extends TestController with ResourceWrite
+class TestControllerUpdate extends TestController with ResourceUpdate
+class TestControllerDelete extends TestController with ResourceDelete
+class TestControllerCreate extends TestController with ResourceCreate
+class TestControllerAll extends TestController with RestCrudController[Boolean] with ResourceUpdate
