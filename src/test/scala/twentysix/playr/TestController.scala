@@ -7,10 +7,10 @@ class TestController extends Resource[Boolean] {
   def name: String = "test"
   def list: EssentialAction = Action { Ok("list") }
   def read(id: Boolean): EssentialAction = Action { Ok("read") }
-  def write(id: Boolean): EssentialAction = Action { NoContent }
-  def update(id: Boolean): EssentialAction = Action { NoContent }
+  def write(id: Boolean): EssentialAction = Action { Ok("write") }
+  def update(id: Boolean): EssentialAction = Action { Ok("update") }
   def delete(id: Boolean): EssentialAction = Action { NoContent }
-  def create: EssentialAction = Action { NoContent }
+  def create: EssentialAction = Action { Created("create") }
 }
 
 class TestControllerRead extends TestController with ResourceRead
