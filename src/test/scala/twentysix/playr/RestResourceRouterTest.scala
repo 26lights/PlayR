@@ -24,6 +24,24 @@ class RestResourceRouterTest extends FunSpec with Matchers{
       status(result) should be(OK)
       contentAsString(result) should be("read")
     }}
+    it("should return Ok(write) for an expected resource id put"){ new InApp(new TestControllerAll()) {
+      val Some(result) = route(FakeRequest(PUT, "/26"))
+      status(result) should be(OK)
+      contentAsString(result) should be("write")
+    }}
+    it("should return NoContent for an expected resource id delete"){ new InApp(new TestControllerAll()) {
+      val Some(result) = route(FakeRequest(DELETE, "/26"))
+      status(result) should be(NO_CONTENT)
+    }}
+    it("should return Ok(update) for an expected resource id patch"){ new InApp(new TestControllerAll()) {
+      val Some(result) = route(FakeRequest("PATCH", "/26"))
+      status(result) should be(OK)
+      contentAsString(result) should be("update")
+    }}
+    it("should return MethodNotAllowed for an expected resource id post"){ new InApp(new TestControllerAll()) {
+      val Some(result) = route(FakeRequest(POST, "/26"))
+      status(result) should be(METHOD_NOT_ALLOWED)
+    }}
     it("should return Ok(list) for an expected resource get"){ new InApp(new TestControllerAll()) {
       val Some(result) = route(FakeRequest(GET, "/"))
       status(result) should be(OK)
@@ -38,12 +56,16 @@ class RestResourceRouterTest extends FunSpec with Matchers{
       val Some(result) = route(FakeRequest(PUT, "/"))
       status(result) should be(METHOD_NOT_ALLOWED)
     }}
-    it("should return NoContent for an unexpected resource id delete"){ new InApp(new TestControllerAll()) {
-      val Some(result) = route(FakeRequest(DELETE, "/26"))
-      status(result) should be(NO_CONTENT)
-    }}
     it("should return MethodNotAllowed for an unsuported post"){ new InApp(new TestControllerRead()) {
       val Some(result) = route(FakeRequest(POST, "/"))
+      status(result) should be(METHOD_NOT_ALLOWED)
+    }}
+    it("should return MethodNotAllowed for an unsuported delete on an expected resource id"){ new InApp(new TestControllerRead()) {
+      val Some(result) = route(FakeRequest(DELETE, "/26"))
+      status(result) should be(METHOD_NOT_ALLOWED)
+    }}
+    it("should return MethodNotAllowed for an unsuported put on an expected resource id"){ new InApp(new TestControllerRead()) {
+      val Some(result) = route(FakeRequest(PUT, "/26"))
       status(result) should be(METHOD_NOT_ALLOWED)
     }}
     it("should return None for an unsuported post on an unexpected resource id"){ new InApp(new TestControllerRead()) {
