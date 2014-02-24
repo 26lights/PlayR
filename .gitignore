@@ -1,7 +1,9 @@
-/.classpath
-/.project
-/.settings
+.classpath
+.project
+.settings
 project/target
 target/
+.target
 .cache
-/logs
+logs
+bin
