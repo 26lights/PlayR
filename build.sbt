@@ -21,3 +21,6 @@ libraryDependencies ++= Seq (
   "org.scalatest"      %% "scalatest"  % "2.0"    % "test"
 )
 
+site.settings
+
+site.sphinxSupport()
