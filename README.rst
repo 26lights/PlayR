@@ -108,7 +108,52 @@ The only missing step is to reference this router in the play's routes file
 Demo
 ====
 
+To show how the router works, let's use ``curl`` with some url.
 
+.. code:: console
+
+  $ curl -f http://localhost:9000/person
+  [1,2]
+
+A simple http GET on the person resource returns a the list of available id as a json list.
+It's the result of the controller's ``list`` method
+
+.. code:: console
+
+  $ curl -f http://localhost:9000/person/1
+  {"name":"john"}
+
+If we add a valid id to the URL, we get the json version of that resource.
+It's the result of the controller's ``read`` method.
+
+
+Let's try to find what methods our resource support:
+
+.. code:: console
+
+  $ curl -f -XOPTION http://localhost:9000/person
+  {"name":"john"}
+
+
+Let's try some erroneous requests.
+
+First, a not supported method on the resource:
+
+.. code:: console
+
+  $ curl -f -XPOST http://localhost:9000/person
+  curl: (22) The requested URL returned error: 405 Method Not Allowed
+  $ curl -f -XPOST http://localhost:9000/person/1
+  curl: (22) The requested URL returned error: 405 Method Not Allowed
+
+Returns the expected "method not supported" code, both for the resource itself and the identified resource.
+
+.. code:: console
+
+  $ curl -f http://localhost:9000/person/5
+  curl: (22) The requested URL returned error: 404 Not Found
+
+There are only two existing person resource, id 5 is invalid, so returns "not found"
 
 ====
 TODO
