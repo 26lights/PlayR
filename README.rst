@@ -1,8 +1,8 @@
-=====
-PlayR
-=====
+======
+Play'R
+======
 
-PlayR stands for: Playing with Play and ReST.
+Play'R stands for: Playing with Play and ReST.
 
 It's a simple, uniform, and introspectable way to declare ReST api in play.
 
@@ -18,6 +18,10 @@ Features
 =============
 Quick Example
 =============
+
+An working version of this example is located in the ``samples/playr-demo`` project.
+
+Just start it with ``sbt run`` and try it with ``curl`` or other HTTP tools.
 
 Source code
 ===========
@@ -131,8 +135,10 @@ Let's try to find what methods our resource support:
 
 .. code:: console
 
-  $ curl -f -XOPTION http://localhost:9000/person
-  {"name":"john"}
+  $ curl -f -XOPTIONS -i http://localhost:9000/person
+  HTTP/1.1 200 OK
+  Allow: GET
+  Content-Length: 0
 
 
 Let's try some erroneous requests.
@@ -146,20 +152,29 @@ First, a not supported method on the resource:
   $ curl -f -XPOST http://localhost:9000/person/1
   curl: (22) The requested URL returned error: 405 Method Not Allowed
 
-Returns the expected "method not supported" code, both for the resource itself and the identified resource.
+Returns the expected «method not supported» code, both for the resource itself and the identified resource.
 
 .. code:: console
 
   $ curl -f http://localhost:9000/person/5
   curl: (22) The requested URL returned error: 404 Not Found
 
-There are only two existing person resource, id 5 is invalid, so returns "not found"
+There are only two existing person resource, id 5 is invalid, so it returns «not found»
+
+
+==================
+More documentation
+==================
+
+A more complete documentation, showing all supported HTTP methods, and more complex routing with sub-resources is available in the `tutorial <tutorial>`_
 
 ====
 TODO
 ====
 
-- Use objects for HTTP verbs instead strings
+Play'R can already be used to develop ReST API, but it's only a starting point and a lot more is left to do, like:
+
+- Use objects for HTTP verbs instead of strings
 - Routing configuration DSL
 - Reverse routing
-
+- Resource type introspection
