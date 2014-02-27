@@ -7,7 +7,6 @@ import play.api.http.HeaderNames.ALLOW
 import scala.runtime.AbstractPartialFunction
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe._
-import play.api.Logger
 import scala.annotation.Annotation
 import scala.annotation.ClassfileAnnotation
 import scala.annotation.StaticAnnotation
@@ -61,7 +60,6 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
 
   def add(t: (String, Routing[C])): this.type = {
     routeMap = routeMap + t
-    Logger.debug(s"t: $t  -  routeMap: $routeMap")
     this
   }
 
@@ -104,7 +102,6 @@ class RestResourceRouter[C<:BaseResource: ResourceWrapper](val controller: C, va
   def idOptionsRoutingHandler = optionsRoutingHandler(ID_OPTIONS)
 
   def handleRoute(requestHeader: RequestHeader, prefixLength: Int, subPrefix: String, sid: String, subPath: String): Option[Handler] = {
-    Logger.debug(s"subPath=$subPath routeMap=$routeMap")
     for {
       action <- routeMap.get(subPath)
       id <- controller.fromId(sid)

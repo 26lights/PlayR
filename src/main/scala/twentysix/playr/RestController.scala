@@ -6,7 +6,6 @@ import scala.runtime.AbstractPartialFunction
 import play.api.mvc.RequestHeader
 import play.api.mvc.Handler
 import play.api.mvc.Controller
-import play.api.Logger
 
 object ResourceCaps extends Enumeration {
   type ResourceCaps = Value

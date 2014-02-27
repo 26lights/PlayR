@@ -5,7 +5,6 @@ import play.core.Router
 import play.api.mvc._
 import scala.runtime.AbstractPartialFunction
 import scala.language.implicitConversions
-import play.api.Logger
 import scala.reflect.runtime.universe._
 
 trait ApiRouter extends RestRouter with SimpleRouter{
