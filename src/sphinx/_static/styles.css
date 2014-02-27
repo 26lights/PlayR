@@ -1,0 +1,14 @@
+a {
+  color: #e60091 }
+
+a:hover {
+  color: #e639a6 }
+
+.wy-menu-vertical a:active {
+    background-color: #e60091 }
+
+.wy-side-nav-search, .wy-nav-top {
+  background-color: #e60091 }
+
+.wy-side-nav-search input[type="text"] {
+  border-color: #bf0079 }
