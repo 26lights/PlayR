@@ -176,7 +176,7 @@ There are only two existing person resource, id 5 is invalid, so it returns «no
 More documentation
 ==================
 
-A more complete documentation, showing all supported HTTP methods, and more complex routing with sub-resources is available in the `Play'R documentation <playr.26source.org>`_
+A more complete documentation, showing all supported HTTP methods, and more complex routing with sub-resources is available in the `Play'R documentation <http://playr.26source.org>`_
 
 The associated code is in the ``samples/playr-tutorial`` project.
 
