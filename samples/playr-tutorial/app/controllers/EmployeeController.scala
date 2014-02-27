@@ -6,7 +6,7 @@ import play.api.libs.json.Json
 
 import models._
 
-case class EmployeeController(company: Company) extends RestCrudController[Employee]{
+case class EmployeeController(company: Company) extends RestRwdController[Employee]{
   val name = "employee"
 
   implicit val employeeFormat = Json.format[Employee]
@@ -22,7 +22,7 @@ case class EmployeeController(company: Company) extends RestCrudController[Emplo
     NoContent
   }
 
-  def write(employee: Employee) = Action { request =>
+  def update(employee: Employee) = Action { request =>
     request.body.asText match {
       case Some(function) =>
         Ok(Json.toJson(EmployeeContainer.update(employee.copy(function=function))))
