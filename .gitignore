@@ -7,3 +7,5 @@ target/
 .cache
 logs
 bin
+.pyenv
+.pydev*
