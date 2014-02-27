@@ -39,10 +39,9 @@ Contents
 ========
 
 .. toctree::
-   :maxdepth: 2
 
-   demo
-   tutorial/intro
+    demo
+    tutorial/intro
 
 Indices and tables
 ==================
