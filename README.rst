@@ -28,7 +28,7 @@ Source code
 
 Let's start with a simple read only resource that manages a list of person
 
-.. code:: scala
+.. code-block:: scala
  
   import play.api.mvc._
   import play.api.libs.json.Json
@@ -59,14 +59,14 @@ Let's start with a simple read only resource that manages a list of person
 
 First, we define a case class that represents a person.
 
-.. code:: scala
+.. code-block:: scala
 
   case class SimplePerson(name: String)
 
 
 Next, we define a Play controller that implements two PlayR traits
 
-.. code:: scala
+.. code-block:: scala
 
   object SimplePersonController extends Controller
                                    with Resource[Person]
@@ -93,14 +93,14 @@ The ``ResourceRead`` trait defines that there is a way to read that resource; it
 
 Finally, we define a ``RestResourceRouter`` instance that will route requests coming for that resource
 
-.. code:: scala
+.. code-block:: scala
 
   object SimplePersonRouter extends RestResourceRouter(SimplePersonController)
 
 
 The only missing step is to reference this router in the play's routes file
 
-.. code:: scala
+.. code-block:: nginx
 
   # Routes
   # This file defines all application routes (Higher priority routes first)
@@ -114,7 +114,7 @@ Demo
 
 To show how the router works, let's use ``curl`` with some url.
 
-.. code:: console
+.. code-block:: console
 
   $ curl -f http://localhost:9000/person
   [1,2]
@@ -122,7 +122,7 @@ To show how the router works, let's use ``curl`` with some url.
 A simple http GET on the person resource returns a the list of available id as a json list.
 It's the result of the controller's ``list`` method
 
-.. code:: console
+.. code-block:: console
 
   $ curl -f http://localhost:9000/person/1
   {"name":"john"}
@@ -133,7 +133,7 @@ It's the result of the controller's ``read`` method.
 
 Let's try to find what methods our resource support:
 
-.. code:: console
+.. code-block:: console
 
   $ curl -f -XOPTIONS -i http://localhost:9000/person
   HTTP/1.1 200 OK
@@ -145,7 +145,7 @@ Let's try some erroneous requests.
 
 First, a not supported method on the resource:
 
-.. code:: console
+.. code-block:: console
 
   $ curl -f -XPOST http://localhost:9000/person
   curl: (22) The requested URL returned error: 405 Method Not Allowed
@@ -154,7 +154,7 @@ First, a not supported method on the resource:
 
 Returns the expected «method not supported» code, both for the resource itself and the identified resource.
 
-.. code:: console
+.. code-block:: console
 
   $ curl -f http://localhost:9000/person/5
   curl: (22) The requested URL returned error: 404 Not Found
@@ -168,6 +168,8 @@ More documentation
 
 A more complete documentation, showing all supported HTTP methods, and more complex routing with sub-resources is available in the `tutorial <tutorial>`_
 
+The associated code is in the ``samples/playr-tutorial`` project.
+
 ====
 TODO
 ====
@@ -175,6 +177,7 @@ TODO
 Play'R can already be used to develop ReST API, but it's only a starting point and a lot more is left to do, like:
 
 - Use objects for HTTP verbs instead of strings
+- Multiple HTTP method per action
 - Routing configuration DSL
 - Reverse routing
 - Resource type introspection
