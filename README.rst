@@ -13,7 +13,8 @@ uniform
   Play'R defines an uniform mapping from http methods to controller methods
 
 introspectable
-  the declared resources capabilities can be listed and used to generate documentation or ui connectors
+  the declared resources capabilities can be listed and used to generate documentation or ui connectors.
+  See the `PlayR-swagger project <https://github.com/26lights/PlayR-swagger>`_ as an example.
 
 ========
 Features
