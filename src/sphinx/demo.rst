@@ -13,47 +13,50 @@ Let's start with a simple read only resource that manages a list of person
 
 .. code-block:: scala
  
+  package controllers
+  
   import play.api.mvc._
-  import play.api.libs.json.Json
   import twentysix.playr._
-
-  case class SimplePerson(name: String)
-
-  object SimplePersonController extends Controller
-                                   with Resource[Person]
-                                   with ResourceRead {
+  import play.api.libs.json.Json
+  
+  case class Person(name: String)
+  
+  object PersonController extends Controller
+                             with Resource[Person]
+                             with ResourceRead {
     def name = "person"
-
+  
     def persons = Map(
-      1 -> SimplePerson("john"),
-      2 -> SimplePerson("jane")
+      1 -> Person("john"),
+      2 -> Person("jane")
     )
-
-    implicit val personFormat = Json.format[SimplePerson]
-
-    def fromId(sid: String): Option[SimplePerson] = toInt(sid).flatMap(persons.get(_))
-
-    def read(person: SimplePerson) = Action { Ok(Json.toJson(person)) }
-
+  
+    implicit val personFormat = Json.format[Person]
+  
+    def fromId(sid: String): Option[Person] = toInt(sid).flatMap(persons.get(_))
+  
+    def read(person: Person) = Action { Ok(Json.toJson(person)) }
+  
     def list() = Action { Ok(Json.toJson(persons.keys)) }
   }
+  
+  object PersonRouter extends RestResourceRouter(PersonController)
 
-  object SimplePersonRouter extends RestResourceRouter(SimplePersonController)
 
 First, we define a case class that represents a person.
 
 .. code-block:: scala
 
-  case class SimplePerson(name: String)
+  case class Person(name: String)
 
 
 Next, we define a Play controller that implements two PlayR traits
 
 .. code-block:: scala
 
-  object SimplePersonController extends Controller
-                                   with Resource[Person]
-                                   with ResourceRead
+  object PersonController extends Controller
+                             with Resource[Person]
+                             with ResourceRead
 
 
 The ``Resource`` trait extends Controller, defines basic resource capabilities and it requires you to define:
@@ -78,7 +81,7 @@ Finally, we define a ``RestResourceRouter`` instance that will route requests co
 
 .. code-block:: scala
 
-  object SimplePersonRouter extends RestResourceRouter(SimplePersonController)
+  object PersonRouter extends RestResourceRouter(PersonController)
 
 
 The only missing step is to reference this router in the play's routes file
@@ -89,7 +92,7 @@ The only missing step is to reference this router in the play's routes file
   # This file defines all application routes (Higher priority routes first)
   # ~~~~
 
-  ->      /person                     controllers.SimplePersonRouter
+  ->      /person                     controllers.PersonRouter
 
 
 Demo
