@@ -5,14 +5,23 @@ a:hover {
   color: #e639a6 }
 
 .wy-menu-vertical a:active {
-    background-color: #e60091 }
+  background-color: #e60091 }
 
 .wy-side-nav-search > a:hover, .wy-side-nav-search .wy-dropdown > a:hover {
-    color: #ffffff;
-    background: none repeat scroll 0% 0% rgba(255, 255, 255, 0.25) }
+  color: #ffffff;
+  background: none repeat scroll 0% 0% rgba(255, 255, 255, 0.25) }
 
 .wy-side-nav-search, .wy-nav-top {
   background-color: #e60091 }
 
 .wy-side-nav-search input[type="text"] {
   border-color: #bf0079 }
+
+footer {
+  font-size: 0.75em;
+}
+
+footer p{
+  font-size: 1.25em;
+}
+
