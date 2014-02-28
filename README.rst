@@ -25,6 +25,10 @@ Features
 - Resource routing and dependencies defined in Scala
 - Introspection API allowing you to generate content from your defined ReST API
 
+.. warning::
+  
+  Play'R is a young project and the API is subject to change.
+
 =============
 Quick Example
 =============
@@ -191,3 +195,4 @@ Play'R can already be used to develop ReST API, but it's only a starting point a
 - Routing configuration DSL
 - Reverse routing
 - Resource type introspection
+- Transactional router
