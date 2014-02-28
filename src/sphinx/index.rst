@@ -24,7 +24,7 @@ Features
 - Uses standard Play controllers
 - Map HTTP verbs to controller methods via traits implementation.
 - Resource routing and dependencies defined in Scala
-- Introspection API allowing you to generate con=tent from your defined ReST API
+- Introspection API allowing you to generate content from your defined ReST API
 
 ===========
 Development
