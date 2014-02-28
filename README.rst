@@ -16,6 +16,19 @@ introspectable
   | the declared resources capabilities can be listed and used to generate documentation or ui connectors.
   | See the `PlayR-swagger project <https://github.com/26lights/PlayR-swagger>`_ as an example.
 
+
+.. |26lights| image:: src/sphinx/26lights.png
+    :width: 64px
+    :target: http://www.26lights.com
+
+Development is supported by |26lights|.
+
+.. warning::
+  
+  Play'R is a young project and the API is subject to change.
+
+
+
 ========
 Features
 ========
@@ -24,10 +37,6 @@ Features
 - Map HTTP verbs to controller methods via traits implementation.
 - Resource routing and dependencies defined in Scala
 - Introspection API allowing you to generate content from your defined ReST API
-
-.. warning::
-  
-  Play'R is a young project and the API is subject to change.
 
 =============
 Quick Example

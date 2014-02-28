@@ -24,15 +24,19 @@ Features
 - Uses standard Play controllers
 - Map HTTP verbs to controller methods via traits implementation.
 - Resource routing and dependencies defined in Scala
-- Introspection API allowing you to generate content from your defined ReST API
+- Introspection API allowing you to generate con=tent from your defined ReST API
 
 ===========
 Development
 ===========
 
-Development and bug tracking is done on github:
+.. |26lights| image:: 26lights.png
+    :width: 64px
+    :target: http://www.26lights.com
 
-`<https://github.com/26lights/PlayR>`_
+Development is supported by |26lights|.
+
+Source and bug tracking are hosted on github: `<https://github.com/26lights/PlayR>`_
 
 .. warning::
   
@@ -56,3 +60,4 @@ Contents
     tutorial/intro
     API (scaladoc) <http://playr.26source.org/api>
     license
+    → by 26Lights <http://www.26lights.com>
