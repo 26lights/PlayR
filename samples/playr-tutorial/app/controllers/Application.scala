@@ -16,6 +16,6 @@ object Application extends Controller {
     )
 
   val api = RestApiRouter()
-    .add("crm" -> crmApi)
     .add(new RestResourceRouter(ColorController))
+    .add("crm" -> crmApi)
 }
