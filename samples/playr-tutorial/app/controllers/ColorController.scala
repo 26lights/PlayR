@@ -28,6 +28,6 @@ object ColorController extends RestReadController[Color]
   def create = Action(parse.json){ request =>
     val newColor = request.body.as[Color]
     ColorContainer.add(newColor.name, newColor.rgb)
-    Ok(Json.toJson(newColor))
+    Created(Json.toJson(newColor))
   }
 }

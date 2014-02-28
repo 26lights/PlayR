@@ -37,6 +37,6 @@ case class EmployeeController(company: Company) extends RestRwdController[Employ
       function <- (request.body \ "function").asOpt[String]
     } yield EmployeeContainer.add(company, person, function)
 
-    employee.map(e=>Ok(Json.toJson(e))).getOrElse(BadRequest)
+    employee.map(e=>Created(Json.toJson(e))).getOrElse(BadRequest)
   }
 }
