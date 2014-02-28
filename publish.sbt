@@ -1,6 +1,6 @@
 publishTo := {
   val isSnapshot = version.value.contains("-SNAPSHOT")
-  val repo = "http://build.26source.org/nexus/content/repositories/"
+  val repo = "http://build.26source.org/nexus/content/repositories/public-"
   val (name, url) = if (isSnapshot)
     ("snapshots", repo + "snapshots")
   else

@@ -39,6 +39,25 @@ Features
 - Resource routing and dependencies defined in Scala
 - Introspection API allowing you to generate content from your defined ReST API
 
+=====
+Usage
+=====
+
+To use Play'R in your sbt based project, you should add a resolver for the 26lights public repository:
+
+.. code-block:: scala
+  
+  resolvers += "26Lights snapshots" at "http://build.26source.org/nexus/content/repositories/public-snapshots"
+
+and add Play'R to your library dependencies:
+
+.. code-block:: scala
+  
+  libraryDependencies ++= Seq (
+    "26lights"  %% "playr"  % "0.1.0-SNAPSHOT"
+  )
+
+
 =============
 Quick Example
 =============

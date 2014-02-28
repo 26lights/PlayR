@@ -42,6 +42,26 @@ Source and bug tracking are hosted on github: `<https://github.com/26lights/Play
   
   Play'R is a young project and the API is subject to change.
 
+=====
+Usage
+=====
+
+To use Play'R in your sbt based project, you should add a resolver for the 26lights public repository:
+
+.. code-block:: scala
+  
+  resolvers += "26Lights snapshots" at "http://build.26source.org/nexus/content/repositories/public-snapshots"
+
+and add Play'R to your library dependencies:
+
+.. code-block:: scala
+  
+  libraryDependencies ++= Seq (
+    "26lights"  %% "playr"  % "0.1.0-SNAPSHOT"
+  )
+
+
+
 ===============
 Further reading
 ===============
