@@ -19,6 +19,7 @@ introspectable
 
 .. |26lights| image:: src/sphinx/26lights.png
     :width: 64px
+    :align: middle
     :target: http://www.26lights.com
 
 Development is supported by |26lights|.
