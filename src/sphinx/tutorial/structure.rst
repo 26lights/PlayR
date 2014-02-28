@@ -1,3 +1,23 @@
+=========================
+Tutorial project struture
+=========================
+
+Before introducing different Play'R concepts, here are some notes about the tutorial project internal structure. 
+
+Most interesting things are located in the controller package.
+
+The rest is supporting code to allow the application to do something.
+
+Model
+=====
+
+The model package contains a case class and a container object for each defined resource.
+
+The container object uses play's cache as storage, and exposes a simple api used by the controllers.
+
+It allows you to list, get, create, update and delete resources.
+
+
 Available resources/url
 =======================
 
@@ -8,6 +28,10 @@ From there, you will find the following resource tree:
  +----------------------------------------+------------------------------------------+-------------------------+
  | uri                                    | description                              | available http methods  |
  +========================================+==========================================+=========================+
+ | ``/api/color``                         | a list of colors                         | GET, POST               |
+ +----------------------------------------+------------------------------------------+-------------------------+
+ | ``/api/color/:id``                     | color details                            | GET, PUT                |
+ +----------------------------------------+------------------------------------------+-------------------------+
  | ``/api/crm``                           | crm related api                          |                         |
  +----------------------------------------+------------------------------------------+-------------------------+
  | ``/api/crm/person``                    | people management                        | GET, POST               |
@@ -24,11 +48,5 @@ From there, you will find the following resource tree:
  +----------------------------------------+------------------------------------------+-------------------------+
  | ``/api/crm/company/:id/functions``     | list of employees functions              | GET                     |
  +----------------------------------------+------------------------------------------+-------------------------+
- | ``/api/color``                         | a list of colors                         | GET, POST               |
- +----------------------------------------+------------------------------------------+-------------------------+
- | ``/api/color/:id``                     | color details                            | GET, PUT                |
- +----------------------------------------+------------------------------------------+-------------------------+
 
 Each resource introduces some Play'R concepts and is detailed in a separate part.
-
-

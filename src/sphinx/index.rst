@@ -34,6 +34,18 @@ Development and bug tracking is done on github:
 
 `<https://github.com/26lights/PlayR>`_
 
+.. warning::
+  
+  Play'R is a young project and the API is subject to change.
+
+===============
+Further reading
+===============
+
+If not already done, you should start with the :doc:`demo` example as a quick introduction.
+
+After that, you can continue with the more complete :doc:`tutorial <tutorial/intro>`.
+
 ========
 Contents
 ========
@@ -42,11 +54,5 @@ Contents
 
     demo
     tutorial/intro
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
+    API (scaladoc) <http://playr.26source.org/api>
+    license

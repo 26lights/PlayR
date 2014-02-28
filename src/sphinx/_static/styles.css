@@ -7,6 +7,10 @@ a:hover {
 .wy-menu-vertical a:active {
     background-color: #e60091 }
 
+.wy-side-nav-search > a:hover, .wy-side-nav-search .wy-dropdown > a:hover {
+    color: #ffffff;
+    background: none repeat scroll 0% 0% rgba(255, 255, 255, 0.25) }
+
 .wy-side-nav-search, .wy-nav-top {
   background-color: #e60091 }
 
