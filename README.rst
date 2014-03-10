@@ -4,7 +4,7 @@ Play'R
 
 Play'R stands for: Playing with Play and ReST.
 
-It's a simple, uniform, and introspectable way to declare ReST api in play.
+It's a simple, uniform, and introspectable way to declare ReST APIs in play.
 
 simple
   Just implements some traits and Play'R will do the routing for you.
