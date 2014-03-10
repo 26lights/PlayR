@@ -1,6 +1,6 @@
-=========================
-Tutorial project struture
-=========================
+==========================
+Tutorial project structure
+==========================
 
 Before introducing different Play'R concepts, here are some notes about the tutorial project internal structure. 
 
@@ -21,7 +21,7 @@ It allows you to list, get, create, update and delete resources.
 Available resources/url
 =======================
 
-The playr-tutorial application define a single entry point for the ReST API as : ``/api`` .
+The playr-tutorial application defines a single entry point for the ReST API as : ``/api``.
 
 From there, you will find the following resource tree:
  

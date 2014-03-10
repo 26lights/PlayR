@@ -2,7 +2,7 @@
 Color resource
 ==============
 
-If you started with the :doc:`../demo` project, you should be already familiar with the Play'R way of defining resource and routing.
+If you started with the :doc:`../demo` project, you should already be familiar with the Play'R way of defining resource and routing.
 
 Let's look at the controller definition in ``controllers/ColorController.scala``:
 
@@ -56,4 +56,4 @@ This resource is added to our application api in ``controllers/Application.scala
     .add(new RestResourceRouter(ColorController))
   ...
 
-Here we have defined an api entry point (more routes will be added in the next examples) and added the controller.
+Here we have defined an API entry point (more routes will be added in the next examples) and added the controller.

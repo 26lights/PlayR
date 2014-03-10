@@ -2,17 +2,17 @@
 Play'R basics
 =============
 
-Play'R is created to simplify ReST api declaration and tries to answer to HTTP request with correct defaults.
+Play'R is created to simplify ReST API declaration and tries to answer to HTTP request with correct defaults.
 
-This includes correct error handling but also a mapping from HTTP method to scala method names (enforced via traits implementation)
+This includes correct error handling but also a mapping from HTTP method to Scala method names (enforced via traits implementation).
 
 Namespace, resources, actions
 =============================
 
-A little glossary for terms used in this documentation
+A little glossary for terms used in this documentation.
 
 Namespace:
-  It's a simple way to group related resources under a common url prefix. A namespace is declared using a RestApiRouter
+  It's a simple way to group related resources under a common URL prefix. A namespace is declared using a RestApiRouter.
 
   Example: ``/crm``
 
@@ -21,7 +21,7 @@ Resource:
 
   For each resource you have a collection of items.
 
-  The collection is accessed through the base resource URL and let you list and create items.
+  The collection is accessed through the base resource URL and lets you list and create items.
 
   Example: ``/crm/company``
 
@@ -48,9 +48,9 @@ Action:
 HTTP method mapping
 ===================
 
-To answer HTTP request, Play'R defines a set of traits you should implement depending on what HTTP method you want to support.
+To answer HTTP requests, Play'R offers a set of traits you should implement depending on what HTTP method you want to support.
 
-For url starting only with the resource name, like: ``/resource`` there are only two possible methods: list and create with the following mapping:
+For url starting only with the resource name, like: ``/resource``, there are only two possible methods: list and create with the following mapping:
 
    +-------------------+--------------------+------------------+
    | HTTP Method       | Play'R trait       | Scala method     |
@@ -65,13 +65,13 @@ For identified resources, with url like: ``/resource/id``, the following mapping
    +-------------------+--------------------+------------------+
    | HTTP Method       | Play'R trait       | Scala method     |  
    +===================+====================+==================+
-   | GET               | ResourceRead       | get(id)          |
+   | GET               | ResourceRead       | read(resource)   |
    +-------------------+--------------------+------------------+
-   | PUT               | ResourceWrite      | write(id)        |
+   | PUT               | ResourceWrite      | write(resource)  |
    +-------------------+--------------------+------------------+
-   | DELETE            | ResourceDelete     | delete(id)       |
+   | DELETE            | ResourceDelete     | delete(resource) |
    +-------------------+--------------------+------------------+
-   | PATCH             | ResourceUpdate     | update(id)       |
+   | PATCH             | ResourceUpdate     | update(resource) |
    +-------------------+--------------------+------------------+
 
 The HTTP ``OPTION`` method is handled by the Play'R router and returns the expected Allow content depending on the implemented scala traits.
@@ -80,7 +80,7 @@ The HTTP ``OPTION`` method is handled by the Play'R router and returns the expec
 Error handling
 ==============
 
-Play'R routing algorithm tries return meaning full HTTP response code depending on the requested url and http method.
+Play'R routing algorithm returns meaningful HTTP response code depending on the requested url and http method.
 
 For each request, the following algorithm is applied:
 

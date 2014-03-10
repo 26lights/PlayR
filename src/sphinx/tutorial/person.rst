@@ -4,7 +4,7 @@ Person resource
 
 This resource introduces two new features: the use of the HTTP delete method and a namespace.
 
-To use the HTTP delete method just implements the ``DeleteResource`` trait:
+To use the HTTP delete method, just implement the ``DeleteResource`` trait:
 
 .. code-block:: scala
 
@@ -34,7 +34,7 @@ Note that the delete method should return HTTP code 201: ``NoContent``
 
 This controller should now be added to our application api in ``controllers/Application.scala`` .
 
-Instead of adding it directly to the api router as it was the case with the ``ColorController``, we will regroup all crm controllers in a namespace under ``/api/crm`` .
+Instead of adding it directly to the api router as was the case with the ``ColorController``, we will group all crm controllers under the same namespace ``/api/crm`` .
 
 This is done by creating a new ``RestApiRouter`` instance and adding this one to the api under the ``crm`` route:
 
