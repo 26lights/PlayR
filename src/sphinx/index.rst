@@ -68,7 +68,7 @@ Further reading
 
 If not already done, you should start with the :doc:`demo` example as a quick introduction.
 
-After that, you can continue with the more complete :doc:`tutorial <tutorial/intro>`.
+After that, you can read about :doc:`Play'R basics <basics>` and the more complete :doc:`tutorial <tutorial/intro>`.
 
 ========
 Contents
@@ -77,6 +77,7 @@ Contents
 .. toctree::
 
     demo
+    basics
     tutorial/intro
     API (scaladoc) <http://playr.26source.org/api>
     license

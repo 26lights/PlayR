@@ -10,7 +10,6 @@ At the same time, you can run the application with ``sbt run`` and use your favo
 
 .. toctree::
 
-    basics
     structure
     color
     person
