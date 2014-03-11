@@ -11,13 +11,22 @@ nav.navbar .navbar-form .form-group {
 }
 
 .ribbon {
+  /* top left corner */
+  position: absolute;
+  overflow: hidden;
+  right: 0px;
+  top: 60px;
+  height: 100%;
+}
+
+.ribbon div{
   background-color: #e60091;
   overflow: hidden;
   white-space: nowrap;
   /* top left corner */
-  position: absolute;
+  position: relative;
   right: -50px;
-  top: 100px;
+  top: 40px;
   /* 45 deg ccw rotation */
   -webkit-transform: rotate(45deg);
      -moz-transform: rotate(45deg);
