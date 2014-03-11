@@ -1,28 +1,13 @@
-a {
-  color: #e60091 }
-
-a:hover {
-  color: #e639a6 }
-
-.wy-menu-vertical a:active {
-  background-color: #e60091 }
-
-.wy-side-nav-search > a:hover, .wy-side-nav-search .wy-dropdown > a:hover {
-  color: #ffffff;
-  background: none repeat scroll 0% 0% rgba(255, 255, 255, 0.25) }
-
-.wy-side-nav-search, .wy-nav-top {
-  background-color: #e60091 }
-
-.wy-side-nav-search input[type="text"] {
-  border-color: #bf0079 }
-
-footer {
-  font-size: 0.75em;
+.navbar-form .form-control {
+  font-size: 13px;
+  padding: 0px;
 }
 
-footer p{
-  font-size: 1.25em;
+nav.navbar .navbar-form .form-group {
+  line-height: inherit;
+}
+.navbar-version {
+  font-size: 0.5em;
 }
 
 .ribbon {
@@ -32,7 +17,7 @@ footer p{
   /* top left corner */
   position: absolute;
   right: -50px;
-  top: 40px;
+  top: 100px;
   /* 45 deg ccw rotation */
   -webkit-transform: rotate(45deg);
      -moz-transform: rotate(45deg);
