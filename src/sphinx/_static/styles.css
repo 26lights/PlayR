@@ -32,6 +32,7 @@ nav.navbar .navbar-form .form-group {
 
 .ribbon a {
   border: 1px solid #fff;
+  overflow: hidden;
   color: #fff;
   display: block;
   font: bold 81.25% 'Helvetica Neue', Helvetica, Arial, sans-serif;
