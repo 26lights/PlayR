@@ -4,7 +4,7 @@ import play.api._
 import play.api.mvc._
 import twentysix.playr.RestApiRouter
 import twentysix.playr.RestResourceRouter
-import twentysix.playr.RestResourceRouter
+import twentysix.playr.GET
 
 object Application extends Controller {
 
@@ -12,7 +12,7 @@ object Application extends Controller {
     .add(PersonController)
     .add(new RestResourceRouter(CompanyController)
       .add("employee", company => EmployeeController(company))
-      .add("functions", "GET", CompanyController.functions)
+      .add("functions", GET, CompanyController.functions)
     )
 
   val api = RestApiRouter()

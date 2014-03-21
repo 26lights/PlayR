@@ -4,7 +4,6 @@ import scala.language.reflectiveCalls
 import play.core.Router
 import play.api.mvc._
 import play.api.http.HeaderNames.ALLOW
-import scala.runtime.AbstractPartialFunction
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe._
 import scala.annotation.Annotation
@@ -139,15 +138,15 @@ class RestResourceRouter[C<:BaseResource: ResourceWrapper](val controller: C, va
     }
   }
 
-  class ActionRouting[F <: EssentialAction:TypeTag](val method: String, val f: Function1[C#ResourceType, F], route: String) extends Routing[C] {
+  class ActionRouting[F <: EssentialAction:TypeTag](val method: HttpMethod, val f: Function1[C#ResourceType, F], route: String) extends Routing[C] {
     def routing(controller: C, id: C#ResourceType, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
-        if (method==requestHeader.method) Some(f(id))
+        if (method.name==requestHeader.method) Some(f(id))
         else Some(Action { Results.MethodNotAllowed })
     }
     def routeInfo(path: String) = ActionRestRouteInfo(path, route, typeOf[F], ResourceCaps.ValueSet(ResourceCaps.Action), Seq(), method)
   }
 
-  def add[F <: EssentialAction : TypeTag](route: String, method: String, f: Function1[C#ResourceType, F]): this.type =
+  def add[F <: EssentialAction : TypeTag](route: String, method: HttpMethod, f: Function1[C#ResourceType, F]): this.type =
     this.add(route-> new ActionRouting(method, f, route))
 }
 
@@ -157,9 +156,9 @@ class SubRestResourceRouter[P, C <: BaseResource : ResourceWrapper](val name: St
   override val caps = super.caps ++ ResourceCaps.ValueSet(ResourceCaps.Child)
   def withParent(id: P) = new RestResourceRouter[C](factory(id), routeMap)
 
-  class ActionRouting[F <: EssentialAction : TypeTag](val method: String, val f: C => Function1[C#ResourceType, F], route: String) extends Routing[C] {
+  class ActionRouting[F <: EssentialAction : TypeTag](val method: HttpMethod, val f: C => Function1[C#ResourceType, F], route: String) extends Routing[C] {
     def routing(controller: C, id: C#ResourceType, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
-      if (method == requestHeader.method) Some(f(controller)(id))
+      if (method.name == requestHeader.method) Some(f(controller)(id))
       else Some(Action {Results.MethodNotAllowed})
     }
 
@@ -172,6 +171,6 @@ class SubRestResourceRouter[P, C <: BaseResource : ResourceWrapper](val name: St
         method)
   }
 
-  def add[F<:EssentialAction:TypeTag](route: String, method: String, f: C => Function1[C#ResourceType, F]): this.type =
+  def add[F<:EssentialAction:TypeTag](route: String, method: HttpMethod, f: C => Function1[C#ResourceType, F]): this.type =
     this.add(route-> new ActionRouting(method, f, route))
 }
