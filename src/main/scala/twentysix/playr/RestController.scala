@@ -1,10 +1,6 @@
 package twentysix.playr
 
-import play.core.Router
 import play.api.mvc.EssentialAction
-import scala.runtime.AbstractPartialFunction
-import play.api.mvc.RequestHeader
-import play.api.mvc.Handler
 import play.api.mvc.Controller
 
 object ResourceCaps extends Enumeration {
