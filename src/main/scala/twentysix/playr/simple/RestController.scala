@@ -1,31 +1,13 @@
-package twentysix.playr
+package twentysix.playr.simple
 
 import play.api.mvc.EssentialAction
 import play.api.mvc.Controller
+import twentysix.playr.core
 
-object ResourceCaps extends Enumeration {
-  type ResourceCaps = Value
-  val Read, Write, Create, Delete, Update, Parent, Child, Action = Value
-}
+trait BaseResource extends core.BaseResource{
+  type IdentifierType = ResourceType
 
-/**
- * Define the conversion from an url id to a real object
- */
-trait BaseResource extends Controller {
-  def name: String
-  type ResourceType
-
-  def toNumber[N](id: String, f: String => N): Option[N] = {
-    import scala.util.control.Exception._
-    catching(classOf[NumberFormatException]) opt f(id)
-  }
-
-  def toInt(id: String) = toNumber(id, _.toInt)
-  def toLong(id: String) = toNumber(id, _.toLong)
-
-  def fromId(id: String): Option[ResourceType]
-
-  def requestWrapper(block: => Option[EssentialAction]): Option[EssentialAction] = block
+  def fromId(id: IdentifierType): Option[ResourceType] = Some(id)
 }
 
 trait Resource[R] extends BaseResource {
@@ -36,56 +18,59 @@ trait Resource[R] extends BaseResource {
 /**
  * Respond to HTTP GET method
  */
-trait ResourceRead {
+trait ResourceRead extends core.ResourceRead{
   this: BaseResource =>
 
-  def read(id: ResourceType): EssentialAction
+  def read(resource: ResourceType): EssentialAction
   def list: EssentialAction
 
-  def readRequestWrapper(block: => Option[EssentialAction]): Option[EssentialAction] = requestWrapper(block)
+  def readResource(id: IdentifierType) = fromId(id).map(read)
+  def listResource = list
 }
 
 /**
  * Respond to HTTP PUT method
  */
-trait ResourceWrite {
+trait ResourceWrite extends core.ResourceWrite{
   this: BaseResource =>
 
   def write(id: ResourceType): EssentialAction
 
-  def writeRequestWrapper(block: => Option[EssentialAction]): Option[EssentialAction] = requestWrapper(block)
+  def writeResource(id: IdentifierType) = fromId(id).map(write)
 }
 
 /**
  * Respond to HTTP POST method
  */
-trait ResourceCreate {
+trait ResourceCreate extends core.ResourceCreate {
   this: BaseResource =>
 
   def create: EssentialAction
+
+  def createResource = create
 }
 
 /**
  * Respond to HTTP DELETE method
  */
-trait ResourceDelete {
+trait ResourceDelete extends core.ResourceDelete{
   this: BaseResource =>
 
   def delete(id: ResourceType): EssentialAction
 
-  def deleteRequestWrapper(block: => Option[EssentialAction]): Option[EssentialAction] = requestWrapper(block)
+  def deleteResource(id: IdentifierType) = fromId(id).map(delete)
 }
 
 
 /**
  * Respond to HTTP PATCH method
  */
-trait ResourceUpdate {
+trait ResourceUpdate extends core.ResourceUpdate{
   this: BaseResource =>
 
   def update(id: ResourceType): EssentialAction
 
-  def updateRequestWrapper(block: => Option[EssentialAction]): Option[EssentialAction] = requestWrapper(block)
+  def updateResource(id: IdentifierType) = fromId(id).map(update)
 }
 
 

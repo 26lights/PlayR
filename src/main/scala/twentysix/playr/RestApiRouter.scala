@@ -1,11 +1,10 @@
 package twentysix.playr
 
-import scala.language.reflectiveCalls
+import scala.language.{implicitConversions, reflectiveCalls}
+
+import core.BaseResource
+import play.api.mvc.{Handler, RequestHeader}
 import play.core.Router
-import play.api.mvc._
-import scala.runtime.AbstractPartialFunction
-import scala.language.implicitConversions
-import scala.reflect.runtime.universe._
 
 trait ApiRouter extends RestRouter with SimpleRouter{
   def routeMap: Map[String, RestRouter]

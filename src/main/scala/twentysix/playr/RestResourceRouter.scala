@@ -9,10 +9,11 @@ import scala.reflect.runtime.universe._
 import scala.annotation.Annotation
 import scala.annotation.ClassfileAnnotation
 import scala.annotation.StaticAnnotation
+import core.BaseResource
 
 
 sealed trait Routing[C<:BaseResource] {
-  def routing(controller: C, id: C#ResourceType, requestHeader: RequestHeader, prefix: String): Option[Handler]
+  def routing(controller: C, id: C#IdentifierType, requestHeader: RequestHeader, prefix: String): Option[Handler]
   def routeInfo(path: String): RestRouteInfo
 }
 
@@ -103,7 +104,7 @@ class RestResourceRouter[C<:BaseResource: ResourceWrapper](val controller: C, va
   def handleRoute(requestHeader: RequestHeader, prefixLength: Int, subPrefix: String, sid: String, subPath: String): Option[Handler] = {
     for {
       action <- routeMap.get(subPath)
-      id <- controller.fromId(sid)
+      id <- controller.parseId(sid)
       res <- action.routing(
         controller,
         id,
@@ -130,8 +131,8 @@ class RestResourceRouter[C<:BaseResource: ResourceWrapper](val controller: C, va
         case "PUT"     => wrapper.writeWrapper(controller, sid)
         case "DELETE"  => wrapper.deleteWrapper(controller, sid)
         case "PATCH"   => wrapper.updateWrapper(controller, sid)
-        case "OPTIONS" => controller.fromId(sid).map(res => idOptionsRoutingHandler())
-        case _         => controller.fromId(sid).map(res => methodNotAllowed)
+        case "OPTIONS" => controller.parseId(sid).map(res => idOptionsRoutingHandler())
+        case _         => controller.parseId(sid).map(res => methodNotAllowed)
       }
 
       case _ => None
