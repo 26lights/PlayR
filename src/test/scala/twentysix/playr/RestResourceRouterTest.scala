@@ -7,11 +7,11 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 
 class RestResourceRouterTest extends FunSpec with Matchers{
-  class FakeApp[C<:BaseResource: ResourceWrapper](controller: C) extends FakeApplication {
+  class FakeApp[C<:core.BaseResource: ResourceWrapper](controller: C) extends FakeApplication {
     override lazy val routes = Some(new RestResourceRouter[C](controller))
   }
 
-  abstract class InApp[C<:BaseResource: ResourceWrapper](controller: C) extends
+  abstract class InApp[C<:core.BaseResource: ResourceWrapper](controller: C) extends
     WithApplication(new FakeApp(controller))
 
   describe("A RestResourceRouter") {
