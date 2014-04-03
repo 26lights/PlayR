@@ -13,7 +13,7 @@ object ResourceCaps extends Enumeration {
  */
 trait BaseResource extends Controller {
   def name: String
-  type ResourceType
+  type IdentifierType
 
   def toNumber[N](id: String, f: String => N): Option[N] = {
     import scala.util.control.Exception._
@@ -23,13 +23,13 @@ trait BaseResource extends Controller {
   def toInt(id: String) = toNumber(id, _.toInt)
   def toLong(id: String) = toNumber(id, _.toLong)
 
-  def fromId(id: String): Option[ResourceType]
+  def parseId(id: String): Option[IdentifierType]
 
   def requestWrapper(block: => Option[EssentialAction]): Option[EssentialAction] = block
 }
 
 trait Resource[R] extends BaseResource {
-  type ResourceType = R
+  type IdentifierType = R
 }
 
 
@@ -39,7 +39,7 @@ trait Resource[R] extends BaseResource {
 trait ResourceRead {
   this: BaseResource =>
 
-  def read(id: ResourceType): EssentialAction
+  def read(id: IdentifierType): EssentialAction
   def list: EssentialAction
 
   def readRequestWrapper(block: => Option[EssentialAction]): Option[EssentialAction] = requestWrapper(block)
@@ -51,7 +51,7 @@ trait ResourceRead {
 trait ResourceWrite {
   this: BaseResource =>
 
-  def write(id: ResourceType): EssentialAction
+  def write(id: IdentifierType): EssentialAction
 
   def writeRequestWrapper(block: => Option[EssentialAction]): Option[EssentialAction] = requestWrapper(block)
 }
@@ -71,7 +71,7 @@ trait ResourceCreate {
 trait ResourceDelete {
   this: BaseResource =>
 
-  def delete(id: ResourceType): EssentialAction
+  def delete(id: IdentifierType): EssentialAction
 
   def deleteRequestWrapper(block: => Option[EssentialAction]): Option[EssentialAction] = requestWrapper(block)
 }
@@ -83,7 +83,7 @@ trait ResourceDelete {
 trait ResourceUpdate {
   this: BaseResource =>
 
-  def update(id: ResourceType): EssentialAction
+  def update(id: IdentifierType): EssentialAction
 
   def updateRequestWrapper(block: => Option[EssentialAction]): Option[EssentialAction] = requestWrapper(block)
 }

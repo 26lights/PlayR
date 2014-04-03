@@ -15,7 +15,7 @@ sealed trait DefaultCaps{
 sealed trait DefaultApply[T<:BaseResource] extends DefaultCaps {
   this: ResourceWrapperBase  =>
   def apply(obj: T, sid: String) = obj.requestWrapper {
-    obj.fromId(sid).map(_ => methodNotAllowed)
+    obj.parseId(sid).map(_ => methodNotAllowed)
   }
 }
 
@@ -31,7 +31,7 @@ trait DefaultReadResourceWrapper{
 object ReadResourceWrapper extends DefaultReadResourceWrapper{
   implicit def readResourceImpl[T<:BaseResource with ResourceRead] = new ReadResourceWrapper[T]{
     def apply(obj: T, sid: String) = obj.readRequestWrapper {
-      obj.fromId(sid).map(obj.read)
+      obj.parseId(sid).map(obj.read)
     }
     def list(obj: T): EssentialAction = obj.list
     val caps = ResourceCaps.ValueSet(ResourceCaps.Read)
@@ -47,7 +47,7 @@ trait DefaultWriteResourceWrapper {
 object WriteResourceWrapper extends DefaultWriteResourceWrapper{
   implicit def writeResourceImpl[T<:BaseResource with ResourceWrite] = new WriteResourceWrapper[T]{
     def apply(obj: T, sid: String) = obj.writeRequestWrapper {
-      obj.fromId(sid).map(obj.write)
+      obj.parseId(sid).map(obj.write)
     }
     val caps = ResourceCaps.ValueSet(ResourceCaps.Write)
   }
@@ -63,7 +63,7 @@ trait DefaultUpdateResourceWrapper {
 object UpdateResourceWrapper extends DefaultUpdateResourceWrapper{
   implicit def updateResourceImpl[T<:BaseResource with ResourceUpdate] = new UpdateResourceWrapper[T]{
     def apply(obj: T, sid: String) = obj.updateRequestWrapper {
-      obj.fromId(sid).map(obj.update)
+      obj.parseId(sid).map(obj.update)
     }
     val caps = ResourceCaps.ValueSet(ResourceCaps.Update)
   }
@@ -78,7 +78,7 @@ trait DefaultDeleteResourceWrapper{
 object DeleteResourceWrapper extends DefaultDeleteResourceWrapper{
   implicit def deleteResourceImpl[T<:BaseResource with ResourceDelete] = new DeleteResourceWrapper[T]{
     def apply(obj: T, sid: String) = obj.deleteRequestWrapper {
-      obj.fromId(sid).map(obj.delete)
+      obj.parseId(sid).map(obj.delete)
     }
     val caps = ResourceCaps.ValueSet(ResourceCaps.Delete)
   }
