@@ -4,7 +4,7 @@ import play.api.mvc._
 import twentysix.playr.simple._
 
 class TestController extends Resource[Boolean] {
-  def fromId(id: String): Option[Boolean] = if(id=="26") Some(true) else None
+  def parseId(id: String): Option[Boolean] = if(id=="26") Some(true) else None
   def name: String = "test"
   def list: EssentialAction = Action { Ok("list") }
   def read(id: Boolean): EssentialAction = Action { Ok("read") }
