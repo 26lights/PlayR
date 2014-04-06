@@ -5,6 +5,7 @@ import play.api.test.FakeApplication
 import play.api.test.WithApplication
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
+import twentysix.playr.core.BaseResource
 
 class RestResourceRouterTest extends FunSpec with Matchers{
   class FakeApp[C<:BaseResource: ResourceWrapper](controller: C) extends FakeApplication {

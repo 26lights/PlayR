@@ -9,6 +9,7 @@ import scala.reflect.runtime.universe._
 import scala.annotation.Annotation
 import scala.annotation.ClassfileAnnotation
 import scala.annotation.StaticAnnotation
+import twentysix.playr.core.BaseResource
 
 
 sealed trait Routing[C<:BaseResource] {

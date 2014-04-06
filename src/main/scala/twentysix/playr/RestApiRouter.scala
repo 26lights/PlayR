@@ -6,6 +6,7 @@ import play.api.mvc._
 import scala.runtime.AbstractPartialFunction
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe._
+import twentysix.playr.core.BaseResource
 
 trait ApiRouter extends RestRouter with SimpleRouter{
   def routeMap: Map[String, RestRouter]

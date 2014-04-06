@@ -1,12 +1,46 @@
 package twentysix.playr.simple
 
-import twentysix.playr._
 import play.api.mvc.EssentialAction
+import twentysix.playr.core
 
-trait Resource[R] extends BaseResource {
-  type IdentifierType = R
-  type ActionType = Function1[R, EssentialAction]
-  def handleAction(id: IdentifierType, action: ActionType): EssentialAction = action(id)
+trait Resource[R] extends core.ResourceTrait[R]
+
+
+trait ResourceRead extends core.ResourceRead {
+  this: core.BaseResource => 
+  def readResource(id: IdentifierType) = read(id)
+  def listResource = list
+
+  def read(id: IdentifierType): EssentialAction
+  def list: EssentialAction
+}
+
+trait ResourceWrite extends core.ResourceWrite{
+  this: core.BaseResource => 
+  def writeResource(id: IdentifierType) = write(id) 
+
+  def write(id: IdentifierType): EssentialAction
+}
+
+trait ResourceDelete extends core.ResourceDelete {
+  this: core.BaseResource => 
+  def deleteResource(id: IdentifierType) = delete(id) 
+
+  def delete(id: IdentifierType): EssentialAction
+}
+
+trait ResourceUpdate extends core.ResourceUpdate {
+  this: core.BaseResource => 
+  def updateResource(id: IdentifierType) = update(id) 
+
+  def update(id: IdentifierType): EssentialAction
+}
+
+trait ResourceCreate extends core.ResourceCreate {
+  this: core.BaseResource => 
+  def createResource = create 
+
+  def create: EssentialAction
 }
 
 //-------------------------
