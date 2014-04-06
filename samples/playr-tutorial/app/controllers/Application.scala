@@ -12,7 +12,7 @@ object Application extends Controller {
     .add(PersonController)
     .add(new RestResourceRouter(CompanyController)
       .add("employee", company => EmployeeController(company))
-      .add("functions", GET, CompanyController.functions)
+      .add("functions", GET, CompanyController.functions _)
     )
 
   val api = RestApiRouter()

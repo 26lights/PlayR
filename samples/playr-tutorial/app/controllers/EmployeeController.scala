@@ -1,6 +1,7 @@
 package controllers
 
 import twentysix.playr._
+import twentysix.playr.simple._
 import play.api.mvc._
 import play.api.libs.json.Json
 
