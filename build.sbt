@@ -4,7 +4,7 @@ releaseSettings
 
 organization := "26lights"
 
-scalaVersion := "2.10.3"
+scalaVersion := "2.10.4"
 
 resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
 
