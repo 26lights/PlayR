@@ -1,5 +1,6 @@
 package twentysix.playr.core
 
+import reflect.runtime.universe.Type
 import play.api.mvc.EssentialAction
 import play.api.mvc.Controller
 import scala.util.control.Exception.catching
@@ -73,7 +74,8 @@ trait ResourceUpdate {
   def updateResource(id: IdentifierType): EssentialAction
 }
 
-trait ResourceAction[I, R<:ResourceTrait[I]] {
-  def handleAction(controller: R, id: I): Option[EssentialAction]
+abstract class ResourceAction[C<:BaseResource] {
+  def handleAction(controller: C, id: C#IdentifierType): EssentialAction
+  def getType: Type
 }
 
