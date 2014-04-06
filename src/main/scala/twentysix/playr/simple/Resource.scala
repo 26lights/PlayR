@@ -7,7 +7,10 @@ import reflect.runtime.universe.{Type,TypeTag,typeOf}
 import scala.language.implicitConversions
 
 trait Resource[R] extends core.ResourceTrait[R] {
+  def parseId(sid: String) = fromId(sid)
+  
   def handleAction(id: R, f: Function1[R, EssentialAction]) = f(id)
+  def fromId(sid: String): Option[R]
 }
 
 object Resource {
