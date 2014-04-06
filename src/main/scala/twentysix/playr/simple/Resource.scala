@@ -2,9 +2,21 @@ package twentysix.playr.simple
 
 import play.api.mvc.EssentialAction
 import twentysix.playr.core
+import twentysix.playr.core.ResourceAction
+import reflect.runtime.universe.{Type,TypeTag,typeOf}
+import scala.language.implicitConversions
 
-trait Resource[R] extends core.ResourceTrait[R]
+trait Resource[R] extends core.ResourceTrait[R] {
+  def handleAction(id: R, f: Function1[R, EssentialAction]) = f(id)
+}
 
+object Resource {
+  implicit def simpleResourceAction[R, C<:Resource[R]](f: R=> EssentialAction)(implicit tt: TypeTag[(R=> EssentialAction)]) = 
+    new ResourceAction[C]{
+      def handleAction(controller: C, id: R): EssentialAction = controller.handleAction(id, f)
+      def getType: Type = tt.tpe 
+    }
+}
 
 trait ResourceRead extends core.ResourceRead {
   this: core.BaseResource => 

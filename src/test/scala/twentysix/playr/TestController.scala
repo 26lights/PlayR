@@ -20,3 +20,7 @@ class TestControllerUpdate extends TestController with ResourceUpdate
 class TestControllerDelete extends TestController with ResourceDelete
 class TestControllerCreate extends TestController with ResourceCreate
 class TestControllerAll extends TestController with RestCrudController[Boolean] with ResourceUpdate
+
+class ExtendedTestController extends TestController {
+  def hello(id: Boolean) = Action { Ok("hello world") }
+}

@@ -14,6 +14,13 @@ class RestResourceRouterTest extends FunSpec with Matchers{
 
   abstract class InApp[C<:BaseResource: ResourceWrapper](controller: C) extends
     WithApplication(new FakeApp(controller))
+  
+  class ExtendedControllerApp extends FakeApplication {
+    val extController = new ExtendedTestController
+    val router = new RestResourceRouter[ExtendedTestController](extController)
+      .add("hello", GET, extController.hello _)
+    override lazy val routes = Some(router)
+  }
 
   describe("A RestResourceRouter") {
     it("should return None for an unexpected resource id get"){ new InApp(new TestControllerAll()) {
@@ -72,6 +79,12 @@ class RestResourceRouterTest extends FunSpec with Matchers{
     it("should return None for an unsuported post on an unexpected resource id"){ new InApp(new TestControllerRead()) {
       val result = route(FakeRequest("POST", "/bla"))
       result should be(None)
+    }}
+
+    it("should return Ok('hello world') an expected resource id hello extension"){ new WithApplication(new ExtendedControllerApp) {
+      val Some(result) = route(FakeRequest("GET", "/26/hello"))
+      status(result) should be(OK)
+      contentAsString(result) should be("hello world")
     }}
   }
 }

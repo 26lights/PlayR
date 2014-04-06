@@ -10,6 +10,7 @@ import scala.annotation.Annotation
 import scala.annotation.ClassfileAnnotation
 import scala.annotation.StaticAnnotation
 import twentysix.playr.core.BaseResource
+import twentysix.playr.core.ResourceAction
 
 
 sealed trait Routing[C<:BaseResource] {
@@ -139,16 +140,16 @@ class RestResourceRouter[C<:BaseResource: ResourceWrapper](val controller: C, va
     }
   }
 
-  class ActionRouting[F <: EssentialAction:TypeTag](val method: HttpMethod, val f: Function1[C#IdentifierType, F], route: String) extends Routing[C] {
+  class ActionRouting(val method: HttpMethod, val action: ResourceAction[C], route: String) extends Routing[C] {
     def routing(controller: C, id: C#IdentifierType, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
-        if (method.name==requestHeader.method) Some(f(id))
+        if (method.name==requestHeader.method) Some(action.handleAction(controller, id))
         else Some(Action { Results.MethodNotAllowed })
     }
-    def routeInfo(path: String) = ActionRestRouteInfo(path, route, typeOf[F], ResourceCaps.ValueSet(ResourceCaps.Action), Seq(), method)
+    def routeInfo(path: String) = ActionRestRouteInfo(path, route, action.getType, ResourceCaps.ValueSet(ResourceCaps.Action), Seq(), method)
   }
 
-  def add[F <: EssentialAction : TypeTag](route: String, method: HttpMethod, f: Function1[C#IdentifierType, F]): this.type =
-    this.add(route-> new ActionRouting(method, f, route))
+  def add(route: String, method: HttpMethod, action: ResourceAction[C]): this.type =
+    this.add(route-> new ActionRouting(method, action, route))
 }
 
 
@@ -157,9 +158,9 @@ class SubRestResourceRouter[P, C <: BaseResource : ResourceWrapper](val name: St
   override val caps = super.caps ++ ResourceCaps.ValueSet(ResourceCaps.Child)
   def withParent(id: P) = new RestResourceRouter[C](factory(id), routeMap)
 
-  class ActionRouting[F <: EssentialAction : TypeTag](val method: HttpMethod, val f: C => Function1[C#IdentifierType, F], route: String) extends Routing[C] {
+  class ActionRouting[F <: EssentialAction : TypeTag](val method: HttpMethod, val action: C => ResourceAction[C], route: String) extends Routing[C] {
     def routing(controller: C, id: C#IdentifierType, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
-      if (method.name == requestHeader.method) Some(f(controller)(id))
+      if (method.name == requestHeader.method) Some(action(controller).handleAction(controller, id))
       else Some(Action {Results.MethodNotAllowed})
     }
 
@@ -172,6 +173,6 @@ class SubRestResourceRouter[P, C <: BaseResource : ResourceWrapper](val name: St
         method)
   }
 
-  def add[F<:EssentialAction:TypeTag](route: String, method: HttpMethod, f: C => Function1[C#IdentifierType, F]): this.type =
-    this.add(route-> new ActionRouting(method, f, route))
+  def add(route: String, method: HttpMethod, action: C => ResourceAction[C]): this.type =
+    this.add(route-> new ActionRouting(method, action, route))
 }
