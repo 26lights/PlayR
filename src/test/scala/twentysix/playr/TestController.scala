@@ -1,7 +1,7 @@
 package twentysix.playr
 
 import play.api.mvc._
-import twentysix.playr.simple.{Resource,RestCrudController}
+import twentysix.playr.simple._
 
 class TestController extends Resource[Boolean] {
   def parseId(id: String): Option[Boolean] = if(id=="26") Some(true) else None
