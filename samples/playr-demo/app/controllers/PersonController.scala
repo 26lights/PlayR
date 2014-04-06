@@ -2,6 +2,7 @@ package controllers
 
 import play.api.mvc._
 import twentysix.playr._
+import twentysix.playr.simple._
 import play.api.libs.json.Json
 
 case class Person(name: String)
