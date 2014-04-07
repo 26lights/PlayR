@@ -54,7 +54,7 @@ and add Play'R to your library dependencies:
 .. code-block:: scala
   
   libraryDependencies ++= Seq (
-    "26lights"  %% "playr"  % "0.1.0-SNAPSHOT"
+    "26lights"  %% "playr"  % "0.2.0-SNAPSHOT"
   )
 
 
