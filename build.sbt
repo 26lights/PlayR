@@ -14,6 +14,8 @@ scalacOptions += "-deprecation"
 
 scalacOptions += "-unchecked"
 
+fork in Test := true
+
 libraryDependencies ++= Seq (
   "com.typesafe.play"  %% "play"       % "2.2.1",
   // test scope
