@@ -1,6 +1,6 @@
 name := "playr"
 
-version := "0.1.0-SNAPSHOT"
+releaseSettings
 
 organization := "26lights"
 
