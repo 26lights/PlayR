@@ -4,6 +4,7 @@ import reflect.runtime.universe.Type
 import play.api.mvc.EssentialAction
 import play.api.mvc.Controller
 import scala.util.control.Exception.catching
+import twentysix.playr.ResourceWrapper
 
 /**
  * Define the conversion from an url id to a real object
@@ -33,8 +34,8 @@ trait ResourceTrait[R] extends BaseResource {
 trait ResourceRead {
   this: BaseResource =>
 
-  def readResource(id: IdentifierType): EssentialAction
-  def listResource: EssentialAction
+  def readResource(id: IdentifierType): Option[EssentialAction]
+  def listResource: Option[EssentialAction]
 }
 
 /**
@@ -43,7 +44,7 @@ trait ResourceRead {
 trait ResourceWrite {
   this: BaseResource =>
 
-  def writeResource(id: IdentifierType): EssentialAction
+  def writeResource(id: IdentifierType): Option[EssentialAction]
 }
 
 /**
@@ -52,7 +53,7 @@ trait ResourceWrite {
 trait ResourceCreate {
   this: BaseResource =>
 
-  def createResource: EssentialAction
+  def createResource: Option[EssentialAction]
 }
 
 /**
@@ -61,7 +62,7 @@ trait ResourceCreate {
 trait ResourceDelete {
   this: BaseResource =>
 
-  def deleteResource(id: IdentifierType): EssentialAction
+  def deleteResource(id: IdentifierType): Option[EssentialAction]
 }
 
 
@@ -71,11 +72,20 @@ trait ResourceDelete {
 trait ResourceUpdate {
   this: BaseResource =>
 
-  def updateResource(id: IdentifierType): EssentialAction
+  def updateResource(id: IdentifierType): Option[EssentialAction]
 }
 
+/**
+ * Handle custom sub paths associated to a resource
+ */
 abstract class ResourceAction[C<:BaseResource] {
-  def handleAction(controller: C, id: C#IdentifierType): EssentialAction
+  def handleAction(controller: C, id: C#IdentifierType): Option[EssentialAction]
   def getType: Type
 }
 
+/**
+ * Handle sub resource controller construction
+ */
+abstract class ControllerFactory[P<:BaseResource, C<:BaseResource: ResourceWrapper] {
+  def construct(parent: P, id: P#IdentifierType): C
+}
