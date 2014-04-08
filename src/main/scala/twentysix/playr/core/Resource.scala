@@ -9,7 +9,7 @@ import twentysix.playr.ResourceWrapper
 /**
  * Define the conversion from an url id to a real object
  */
-sealed trait BaseResource extends Controller {
+trait BaseResource extends Controller {
   def name: String
   type IdentifierType
 
