@@ -55,6 +55,15 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
     def routeInfo(path: String) = router.routerRouteResource(path)
   }
 
+  class ActionRouting(val method: HttpMethod, val action: ResourceAction[C], route: String) extends Routing[C] {
+    def routing(controller: C, id: C#IdentifierType, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
+        if (method.name==requestHeader.method)
+          action.handleAction(controller, id)
+        else
+          Some(Action { Results.MethodNotAllowed })
+    }
+    def routeInfo(path: String) = ActionRestRouteInfo(path, route, action.getType, ResourceCaps.ValueSet(ResourceCaps.Action), Seq(), method)
+  }
 
   def routeResources(root: String) = Seq(routerRouteResource(root))
   def routerRouteResource(root: String) = ApiRestRouteInfo(root, name, wrapper.controllerType, caps, subRouteResources)
@@ -73,6 +82,9 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
 
   def add[S<:BaseResource : ResourceWrapper](route: String, factory: ControllerFactory[C, S]): this.type =
     this.add(route, new SubRestResourceRouter(route, factory))
+
+  def add(route: String, method: HttpMethod, action: ResourceAction[C]): this.type =
+    this.add(route-> new ActionRouting(method, action, route))
 }
 
 
@@ -140,19 +152,6 @@ class RestResourceRouter[C<:BaseResource: ResourceWrapper](val controller: C, va
       case _ => None
     }
   }
-
-  class ActionRouting(val method: HttpMethod, val action: ResourceAction[C], route: String) extends Routing[C] {
-    def routing(controller: C, id: C#IdentifierType, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
-        if (method.name==requestHeader.method)
-          action.handleAction(controller, id)
-        else
-          Some(Action { Results.MethodNotAllowed })
-    }
-    def routeInfo(path: String) = ActionRestRouteInfo(path, route, action.getType, ResourceCaps.ValueSet(ResourceCaps.Action), Seq(), method)
-  }
-
-  def add(route: String, method: HttpMethod, action: ResourceAction[C]): this.type =
-    this.add(route-> new ActionRouting(method, action, route))
 }
 
 
@@ -161,24 +160,4 @@ class SubRestResourceRouter[P<:BaseResource, C <: BaseResource : ResourceWrapper
   override val caps = super.caps ++ ResourceCaps.ValueSet(ResourceCaps.Child)
 
   def withParent(parent: P, id: P#IdentifierType) = new RestResourceRouter[C](factory.construct(parent, id))
-
-  class ActionRouting[F <: EssentialAction : TypeTag](val method: HttpMethod, val action: C => ResourceAction[C], route: String) extends Routing[C] {
-    def routing(controller: C, id: C#IdentifierType, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
-      if (method.name == requestHeader.method)
-        action(controller).handleAction(controller, id)
-      else
-        Some(Action {Results.MethodNotAllowed})
-    }
-
-    def routeInfo(path: String) = ActionRestRouteInfo(
-        path,
-        route,
-        typeOf[F],
-        ResourceCaps.ValueSet(ResourceCaps.Action),
-        Seq(),
-        method)
-  }
-
-  def add(route: String, method: HttpMethod, action: C => ResourceAction[C]): this.type =
-    this.add(route-> new ActionRouting(method, action, route))
 }

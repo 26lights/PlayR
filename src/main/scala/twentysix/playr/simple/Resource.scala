@@ -22,6 +22,12 @@ object Resource {
       def getType: Type = tt.tpe
     }
 
+  implicit def simpleSubResourceAction[R, C<:Resource[R]](f: C => R => EssentialAction)(implicit tt: TypeTag[R=> EssentialAction]) =
+    new ResourceAction[C] {
+      def handleAction(controller: C, id: R): Option[EssentialAction] = controller.handleAction(id, f(controller))
+      def getType: Type = tt.tpe
+    }
+
   implicit def simpleControllerFactory[R, P<:Resource[R], C<:core.BaseResource: ResourceWrapper](f: R => C ) =
     new ControllerFactory[P, C]{
       def construct(parent: P, resource: R) = f(resource)
