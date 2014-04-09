@@ -11,8 +11,8 @@ object Application extends Controller {
   val crmApi = RestApiRouter()
     .add(PersonController)
     .add(new RestResourceRouter(CompanyController)
-      .add("employee", company => EmployeeController(company))
       .add("functions", GET, CompanyController.functions _)
+      .add("employee", company => EmployeeController(company))
     )
 
   val api = RestApiRouter()

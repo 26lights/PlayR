@@ -17,6 +17,7 @@ Let's start with a simple read only resource that manages a list of person.
   
   import play.api.mvc._
   import twentysix.playr._
+  import twentysix.playr.simple._
   import play.api.libs.json.Json
   
   case class Person(name: String)
