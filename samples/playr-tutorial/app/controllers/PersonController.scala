@@ -23,15 +23,15 @@ object PersonController extends RestCrudController[Person]{
 
   def write(person: Person) = Action { request =>
     request.body.asText match {
-      case Some(name) => Ok(PersonContainer.update(person.copy(name=name)).name)
-      case None       => BadRequest("Invalid name")
+      case Some(name) if (name.length > 0) => Ok(PersonContainer.update(person.copy(name=name)).name)
+      case _                               => BadRequest("Invalid name")
     }
   }
 
   def create = Action { request =>
     request.body.asText match {
-      case Some(name) => Created(PersonContainer.add(name).name)
-      case None       => BadRequest("Invalid name")
+      case Some(name) if name.length > 0 => Created(PersonContainer.add(name).name)
+      case _                             => BadRequest("Invalid name")
     }
   }
 }
