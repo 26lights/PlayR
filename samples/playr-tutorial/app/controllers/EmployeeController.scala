@@ -33,7 +33,7 @@ case class EmployeeController(company: Company) extends RestRwdController[Employ
 
   def create = Action(parse.json) { request =>
     val employee = for {
-      personId <- (request.body \ "person_id").asOpt[Int]
+      personId <- (request.body \ "personId").asOpt[Int]
       person <- PersonContainer.get(personId)
       function <- (request.body \ "function").asOpt[String]
     } yield EmployeeContainer.add(company, person, function)

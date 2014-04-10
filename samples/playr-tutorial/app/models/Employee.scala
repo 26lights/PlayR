@@ -14,6 +14,6 @@ object EmployeeContainer extends CachedContainer[Employee]{
   )
 
   def add(company: Company, person: Person, function: String) = {
-    addItem(Employee(person.id, company.id, function))
+    addItem(Employee(company.id, person.id, function))
   }
 }

@@ -7,7 +7,8 @@ import play.api.libs.json.Json
 
 import models._
 
-object ColorController extends RestReadController[Color]
+object ColorController extends Resource[Color]
+                          with ResourceRead
                           with ResourceCreate
                           with ResourceWrite {
   val name = "color"
