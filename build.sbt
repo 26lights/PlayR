@@ -17,9 +17,9 @@ scalacOptions += "-unchecked"
 fork in Test := true
 
 libraryDependencies ++= Seq (
-  "com.typesafe.play"  %% "play"       % "2.2.1",
+  "com.typesafe.play"  %% "play"       % "2.2.3",
   // test scope
-  "com.typesafe.play"  %% "play-test"  % "2.2.1"  % "test",
+  "com.typesafe.play"  %% "play-test"  % "2.2.3"  % "test",
   "org.scalatest"      %% "scalatest"  % "2.0"    % "test"
 )
 
