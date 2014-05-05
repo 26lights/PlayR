@@ -8,7 +8,8 @@ import scala.language.implicitConversions
 import twentysix.playr.ResourceWrapper
 import twentysix.playr.core.ControllerFactory
 
-trait Resource[R] extends core.ResourceTrait[R] {
+trait Resource[R] extends core.ResourceTrait[R]
+                     with core.ResourceShortcuts{
   def parseId(sid: String) = fromId(sid)
 
   def handleAction(id: R, f: Function1[R, EssentialAction]) = Some(f(id))
