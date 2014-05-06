@@ -9,6 +9,9 @@ import play.api.mvc.SimpleResult
 import play.api.libs.json.JsValue
 import play.api.mvc.Controller
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import play.api.libs.json.JsSuccess
+import play.api.libs.json.JsSuccess
+import play.api.libs.json.JsSuccess
 
 trait ResourceShortcuts {
   this: Controller =>
@@ -31,6 +34,22 @@ trait ResourceShortcuts {
     request.body.validate[T] match  {
       case s: JsSuccess[T] => block(s.get)
       case e: JsError => Future(BadRequest(JsError.toFlatJson(e)))
+    }
+  }
+
+  implicit class ResourceJsonExtensions(value: JsValue) {
+    def withValidTransform[A <: JsValue](rds: Reads[A])(block: A => SimpleResult): SimpleResult = {
+      value.transform(rds) match {
+        case s: JsSuccess[A] => block(s.get)
+        case e: JsError => BadRequest(JsError.toFlatJson(e))
+      }
+    }
+
+    def withValidTransformAsync[A <: JsValue](rds: Reads[A])(block: A => Future[SimpleResult]): Future[SimpleResult] = {
+        value.transform(rds) match {
+        case s: JsSuccess[A] => block(s.get)
+        case e: JsError => Future(BadRequest(JsError.toFlatJson(e)))
+        }
     }
   }
 }
