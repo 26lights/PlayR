@@ -159,5 +159,5 @@ class SubRestResourceRouter[P<:BaseResource, C <: BaseResource : ResourceWrapper
   var routeMap = Map[String, Routing[C]]()
   override val caps = super.caps ++ ResourceCaps.ValueSet(ResourceCaps.Child)
 
-  def withParent(parent: P, id: P#IdentifierType) = new RestResourceRouter[C](factory.construct(parent, id))
+  def withParent(parent: P, id: P#IdentifierType) = new RestResourceRouter[C](factory.construct(parent, id), routeMap)
 }
