@@ -1,12 +1,10 @@
 package twentysix.playr.simple
 
-import play.api.mvc.EssentialAction
-import twentysix.playr.core
-import twentysix.playr.core.ResourceAction
-import reflect.runtime.universe.{Type,TypeTag,typeOf}
 import scala.language.implicitConversions
-import twentysix.playr.ResourceWrapper
-import twentysix.playr.core.ControllerFactory
+
+import play.api.mvc.EssentialAction
+import twentysix.playr.{ResourceWrapper, core}
+import twentysix.playr.core.{ControllerFactory, ResourceAction}
 
 trait Resource[R] extends core.ResourceTrait[R]
                      with core.ResourceShortcuts{
@@ -17,16 +15,14 @@ trait Resource[R] extends core.ResourceTrait[R]
 }
 
 object Resource {
-  implicit def simpleResourceAction[R, C<:Resource[R]](f: R=> EssentialAction)(implicit tt: TypeTag[R=> EssentialAction]) =
+  implicit def simpleResourceAction[R, C<:Resource[R]](f: R=> EssentialAction) =
     new ResourceAction[C]{
       def handleAction(controller: C, id: R): Option[EssentialAction] = controller.handleAction(id, f)
-      def getType: Type = tt.tpe
     }
 
-  implicit def simpleSubResourceAction[R, C<:Resource[R]](f: C => R => EssentialAction)(implicit tt: TypeTag[R=> EssentialAction]) =
+  implicit def simpleSubResourceAction[R, C<:Resource[R]](f: C => R => EssentialAction) =
     new ResourceAction[C] {
       def handleAction(controller: C, id: R): Option[EssentialAction] = controller.handleAction(id, f(controller))
-      def getType: Type = tt.tpe
     }
 
   implicit def simpleControllerFactory[R, P<:Resource[R], C<:core.BaseResource: ResourceWrapper](f: R => C ) =

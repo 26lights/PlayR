@@ -62,7 +62,7 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
         else
           Some(Action { Results.MethodNotAllowed })
     }
-    def routeInfo(path: String) = ActionRestRouteInfo(path, route, action.getType, ResourceCaps.ValueSet(ResourceCaps.Action), Seq(), method)
+    def routeInfo(path: String) = ActionRestRouteInfo(path, route, wrapper.controllerType, ResourceCaps.ValueSet(ResourceCaps.Action), Seq(), method)
   }
 
   def routeResources(root: String) = Seq(routerRouteResource(root))

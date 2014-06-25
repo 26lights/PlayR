@@ -80,7 +80,6 @@ trait ResourceUpdate {
  */
 abstract class ResourceAction[C<:BaseResource] {
   def handleAction(controller: C, id: C#IdentifierType): Option[EssentialAction]
-  def getType: Type
 }
 
 /**

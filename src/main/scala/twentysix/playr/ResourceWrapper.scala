@@ -117,6 +117,6 @@ object ResourceWrapper {
       val updateWrapper = implicitly[UpdateResourceWrapper[C]]
       val deleteWrapper = implicitly[DeleteResourceWrapper[C]]
       val createWrapper = implicitly[CreateResourceWrapper[C]]
-      val controllerType = typeOf[C]
+      def controllerType = typeOf[C]
   }
 }
