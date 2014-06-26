@@ -16,6 +16,8 @@ scalacOptions += "-unchecked"
 
 fork in Test := true
 
+ReleaseKeys.versionBump := sbtrelease.Version.Bump.Minor
+
 libraryDependencies ++= Seq (
   "com.typesafe.play"  %% "play"       % "2.2.3",
   // test scope
