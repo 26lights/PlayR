@@ -5,6 +5,7 @@ import play.api.mvc.EssentialAction
 import play.api.mvc.Controller
 import scala.util.control.Exception.catching
 import twentysix.playr.ResourceWrapper
+import twentysix.playr.RestRouteFilter
 
 /**
  * Define the conversion from an url id to a real object
@@ -87,4 +88,14 @@ abstract class ResourceAction[C<:BaseResource] {
  */
 abstract class ControllerFactory[P<:BaseResource, C<:BaseResource: ResourceWrapper] {
   def construct(parent: P, id: P#IdentifierType): C
+}
+
+
+/**
+ * Allow rest api based resource filtering
+ */
+trait ResourceRouteFilter {
+  this: BaseResource =>
+
+  def routeFilter: RestRouteFilter[IdentifierType]
 }

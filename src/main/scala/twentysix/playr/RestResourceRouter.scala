@@ -15,7 +15,11 @@ import twentysix.playr.core.ControllerFactory
 
 
 sealed trait Routing[C<:BaseResource] {
-  def routing(controller: C, id: C#IdentifierType, requestHeader: RequestHeader, prefix: String): Option[Handler]
+  def routing( controller: C,
+               id: C#IdentifierType,
+               requestHeader: RequestHeader,
+               prefix: String,
+               context: RouteFilterContext[C#IdentifierType]): Option[Handler]
   def routeInfo(path: String): RestRouteInfo
 }
 
@@ -35,9 +39,13 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
   var routeMap: Map[String, Routing[C]]
 
   class SubResourceRouting(val router: SubRestResourceRouter[C, _]) extends Routing[C]{
-    def routing(controller: C, id: C#IdentifierType, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
+    def routing( controller: C,
+                 id: C#IdentifierType,
+                 requestHeader: RequestHeader,
+                 prefix: String,
+                 context: RouteFilterContext[C#IdentifierType]): Option[Handler] = {
       Router.Include {
-        val subRouter = router.withParent(controller, id)
+        val subRouter = router.withParent(controller, id, context)
         subRouter.setPrefix(prefix)
         subRouter
       }.unapply(requestHeader)
@@ -46,7 +54,11 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
   }
 
   class ResourceRouting(val router: RestResourceRouter[_]) extends Routing[C]{
-    def routing(controller: C, id: C#IdentifierType, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
+    def routing( controller: C,
+                 id: C#IdentifierType,
+                 requestHeader: RequestHeader,
+                 prefix: String,
+                 context: RouteFilterContext[C#IdentifierType]): Option[Handler] = {
       Router.Include {
         router.setPrefix(prefix)
         router
@@ -56,7 +68,11 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
   }
 
   class ActionRouting(val method: HttpMethod, val action: ResourceAction[C], route: String) extends Routing[C] {
-    def routing(controller: C, id: C#IdentifierType, requestHeader: RequestHeader, prefix: String): Option[Handler] = {
+    def routing( controller: C,
+                 id: C#IdentifierType,
+                 requestHeader: RequestHeader,
+                 prefix: String,
+                 context: RouteFilterContext[C#IdentifierType]): Option[Handler] = {
         if (method.name==requestHeader.method)
           action.handleAction(controller, id)
         else
@@ -88,7 +104,9 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
 }
 
 
-class RestResourceRouter[C<:BaseResource: ResourceWrapper](val controller: C, var routeMap: Map[String, Routing[C]]= Map[String, Routing[C]]())
+class RestResourceRouter[C<:BaseResource: ResourceWrapper]( val controller: C,
+                                                            var routeMap: Map[String, Routing[C]]= Map[String, Routing[C]](),
+                                                            val parentContext: Option[RouteFilterContext[_]] = None)
       extends AbstractRestResourceRouter[C] with RestRouter with SimpleRouter{
   val name = controller.name
 
@@ -123,7 +141,8 @@ class RestResourceRouter[C<:BaseResource: ResourceWrapper](val controller: C, va
         controller,
         id,
         requestHeader,
-        requestHeader.path.take(prefixLength + subPrefix.length)
+        requestHeader.path.take(prefixLength + subPrefix.length),
+        RouteFilterContext(name, Some(sid), Some(id), parentContext)
       )
     } yield res
   }
@@ -159,5 +178,9 @@ class SubRestResourceRouter[P<:BaseResource, C <: BaseResource : ResourceWrapper
   var routeMap = Map[String, Routing[C]]()
   override val caps = super.caps ++ ResourceCaps.ValueSet(ResourceCaps.Child)
 
-  def withParent(parent: P, id: P#IdentifierType) = new RestResourceRouter[C](factory.construct(parent, id), routeMap)
+  def withParent(parent: P, id: P#IdentifierType, context: RouteFilterContext[P#IdentifierType]) = new RestResourceRouter[C](
+    factory.construct(parent, id),
+    routeMap,
+    Some(context)
+  )
 }

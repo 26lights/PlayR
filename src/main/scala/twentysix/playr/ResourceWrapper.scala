@@ -8,6 +8,7 @@ import twentysix.playr.core.ResourceRead
 import twentysix.playr.core.ResourceDelete
 import twentysix.playr.core.ResourceCreate
 import twentysix.playr.core.BaseResource
+import twentysix.playr.core.ResourceRouteFilter
 
 sealed trait ResourceWrapperBase {
   val methodNotAllowed = Action { Results.MethodNotAllowed }
@@ -95,12 +96,27 @@ object CreateResourceWrapper extends DefaultCreateResourceWrapper{
   }
 }
 
+trait ResourceRouteFilterWrapper[T] {
+  def apply(obj: T): BaseRestRouteFilter
+}
+trait DefaultResourceRouteFilterWrapper {
+  implicit def defaultImpl[T] = new ResourceRouteFilterWrapper[T] {
+    def apply(obj: T) = NoopFilter
+  }
+}
+object ResourceRouteFilterWrapper extends DefaultResourceRouteFilterWrapper {
+  implicit def resourceRouteFilterImpl[T<:ResourceRouteFilter] = new ResourceRouteFilterWrapper[T]{
+    def apply(obj: T) = obj.routeFilter
+  }
+}
+
 trait ResourceWrapper[T]{
   def readWrapper: ReadResourceWrapper[T]
   def writeWrapper: WriteResourceWrapper[T]
   def updateWrapper: UpdateResourceWrapper[T]
   def deleteWrapper: DeleteResourceWrapper[T]
   def createWrapper: CreateResourceWrapper[T]
+  def routeFilterWrapper: ResourceRouteFilterWrapper[T]
   def controllerType: Type
 }
 object ResourceWrapper {
@@ -110,13 +126,15 @@ object ResourceWrapper {
                                      :WriteResourceWrapper
                                      :UpdateResourceWrapper
                                      :DeleteResourceWrapper
-                                     :CreateResourceWrapper] =
+                                     :CreateResourceWrapper
+                                     :ResourceRouteFilterWrapper] =
     new ResourceWrapper[C] {
       val readWrapper = implicitly[ReadResourceWrapper[C]]
       val writeWrapper = implicitly[WriteResourceWrapper[C]]
       val updateWrapper = implicitly[UpdateResourceWrapper[C]]
       val deleteWrapper = implicitly[DeleteResourceWrapper[C]]
       val createWrapper = implicitly[CreateResourceWrapper[C]]
+      val routeFilterWrapper = implicitly[ResourceRouteFilterWrapper[C]]
       def controllerType = typeOf[C]
   }
 }
