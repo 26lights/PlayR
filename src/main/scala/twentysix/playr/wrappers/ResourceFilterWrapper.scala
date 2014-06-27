@@ -1,8 +1,9 @@
-package twentysix.playr
+package twentysix.playr.wrappers
 
 import twentysix.playr.core.BaseResource
 import play.api.mvc.{RequestHeader, Handler}
 import twentysix.playr.core.ResourceRouteFilter
+import twentysix.playr.RouteFilterContext
 
 trait ResourceRouteFilterWrapper[T<:BaseResource] {
   def filterTraverse(controller: T, requestHeader: RequestHeader, path: String, sid: String,
