@@ -134,17 +134,17 @@ class RestResourceRouter[C<:BaseResource: ResourceWrapper]( val controller: C,
   def idOptionsRoutingHandler = optionsRoutingHandler(ID_OPTIONS)
 
   def handleRoute(requestHeader: RequestHeader, prefixLength: Int, subPrefix: String, sid: String, subPath: String): Option[Handler] = {
-    for {
-      action <- routeMap.get(subPath)
-      id <- controller.parseId(sid)
-      res <- action.routing(
-        controller,
-        id,
-        requestHeader,
-        requestHeader.path.take(prefixLength + subPrefix.length),
-        RouteFilterContext(name, Some(sid), Some(id), parentContext)
-      )
-    } yield res
+    routeMap.get(subPath).flatMap { action =>
+      def next(id: C#IdentifierType) = () =>
+        action.routing(
+          controller,
+          id,
+          requestHeader,
+          requestHeader.path.take(prefixLength + subPrefix.length),
+          RouteFilterContext(name, Some(sid), Some(id), parentContext)
+        )
+      wrapper.routeFilterWrapper.filterTraverse(controller, requestHeader, name, sid, parentContext, next)
+    }
   }
 
   def routeRequest(requestHeader: RequestHeader, path: String, method: String): Option[Handler] = {

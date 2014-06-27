@@ -94,8 +94,6 @@ abstract class ControllerFactory[P<:BaseResource, C<:BaseResource: ResourceWrapp
 /**
  * Allow rest api based resource filtering
  */
-trait ResourceRouteFilter {
-  this: BaseResource =>
-
+trait ResourceRouteFilter extends BaseResource {
   def routeFilter: RestRouteFilter[IdentifierType]
 }
