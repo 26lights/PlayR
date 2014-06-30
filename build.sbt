@@ -22,7 +22,7 @@ libraryDependencies ++= Seq (
   "com.typesafe.play"  %% "play"       % "2.2.3",
   // test scope
   "com.typesafe.play"  %% "play-test"  % "2.2.3"  % "test",
-  "org.scalatest"      %% "scalatest"  % "2.0"    % "test"
+  "org.scalatest"      %% "scalatest"  % "2.2.0"  % "test"
 )
 
 site.settings
