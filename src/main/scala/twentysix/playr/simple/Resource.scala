@@ -1,7 +1,6 @@
 package twentysix.playr.simple
 
 import scala.language.implicitConversions
-
 import play.api.mvc.EssentialAction
 import twentysix.playr.{ResourceWrapper, core}
 import twentysix.playr.core.{ControllerFactory, ResourceAction}
@@ -66,6 +65,10 @@ trait ResourceCreate extends core.ResourceCreate {
   def createResource = Some(create)
 
   def create: EssentialAction
+}
+
+trait ResourceRouteFilter extends core.ResourceRouteFilter {
+  this: core.BaseResource =>
 }
 
 //-------------------------

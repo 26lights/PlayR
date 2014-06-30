@@ -2,7 +2,6 @@ package twentysix.playr
 
 import play.api.mvc._
 import twentysix.playr.simple._
-import twentysix.playr.core.ResourceRouteFilter
 
 class TestController extends Resource[Boolean] {
   def fromId(id: String): Option[Boolean] = if(id=="26") Some(true) else None
