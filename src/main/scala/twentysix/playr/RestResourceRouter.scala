@@ -14,13 +14,15 @@ import twentysix.playr.core.ResourceAction
 import twentysix.playr.core.ControllerFactory
 
 
-sealed trait Routing[C<:BaseResource] {
+sealed abstract class Routing[C<:BaseResource] {
   def routing( controller: C,
-               id: C#IdentifierType,
                requestHeader: RequestHeader,
+               sid: String,
                prefix: String,
-               context: RouteFilterContext[C#IdentifierType]): Option[Handler]
+               parentContext: Option[RouteFilterContext[_]]): Option[Handler]
   def routeInfo(path: String): RestRouteInfo
+
+  val custom: Boolean
 }
 
 
@@ -40,45 +42,53 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
 
   class SubResourceRouting(val router: SubRestResourceRouter[C, _]) extends Routing[C]{
     def routing( controller: C,
-                 id: C#IdentifierType,
                  requestHeader: RequestHeader,
+                 sid: String,
                  prefix: String,
-                 context: RouteFilterContext[C#IdentifierType]): Option[Handler] = {
-      Router.Include {
-        val subRouter = router.withParent(controller, id, context)
-        subRouter.setPrefix(prefix)
-        subRouter
-      }.unapply(requestHeader)
+                 parentContext: Option[RouteFilterContext[_]]): Option[Handler] = {
+      def next(id: C#IdentifierType) =
+        Router.Include {
+          val subRouter = router.withParent(controller, id, RouteFilterContext(name, Some(sid), Some(id), parentContext))
+          subRouter.setPrefix(prefix)
+          subRouter
+        }.unapply(requestHeader)
+      wrapper.routeFilterWrapper.filterTraverse(controller, requestHeader, name, sid, parentContext, next)
     }
     def routeInfo(path: String) = router.routerRouteResource(path)
+
+    val custom = false
   }
 
   class ResourceRouting(val router: RestResourceRouter[_]) extends Routing[C]{
     def routing( controller: C,
-                 id: C#IdentifierType,
                  requestHeader: RequestHeader,
+                 sid: String,
                  prefix: String,
-                 context: RouteFilterContext[C#IdentifierType]): Option[Handler] = {
-      Router.Include {
-        router.setPrefix(prefix)
-        router
+                 parentContext: Option[RouteFilterContext[_]]): Option[Handler] = {
+      def next(id: C#IdentifierType) = Router.Include {
+        val subRouter = router.withParentContext(RouteFilterContext(name, Some(sid), Some(id), parentContext))
+        subRouter.setPrefix(prefix)
+        subRouter
       }.unapply(requestHeader)
+      wrapper.routeFilterWrapper.filterTraverse(controller, requestHeader, name, sid, parentContext, next)
     }
     def routeInfo(path: String) = router.routerRouteResource(path)
+    val custom = false
   }
 
   class ActionRouting(val method: HttpMethod, val action: ResourceAction[C], route: String) extends Routing[C] {
     def routing( controller: C,
-                 id: C#IdentifierType,
                  requestHeader: RequestHeader,
+                 sid: String,
                  prefix: String,
-                 context: RouteFilterContext[C#IdentifierType]): Option[Handler] = {
-        if (method.name==requestHeader.method)
-          action.handleAction(controller, id)
-        else
-          Some(Action { Results.MethodNotAllowed })
+                 parentContext: Option[RouteFilterContext[_]]): Option[Handler] = {
+      if (method.name==requestHeader.method)
+        wrapper.routeFilterWrapper.filterCustom(controller, requestHeader, name, sid, parentContext, id => action.handleAction(controller, id))
+      else
+        wrapper.routeFilterWrapper.filterCustom(controller, requestHeader, name, sid, parentContext, id => Some(Action { Results.MethodNotAllowed }))
     }
     def routeInfo(path: String) = ActionRestRouteInfo(path, route, wrapper.controllerType, ResourceCaps.ValueSet(ResourceCaps.Action), Seq(), method)
+    val custom = true
   }
 
   def routeResources(root: String) = Seq(routerRouteResource(root))
@@ -135,15 +145,7 @@ class RestResourceRouter[C<:BaseResource: ResourceWrapper]( val controller: C,
 
   def handleRoute(requestHeader: RequestHeader, prefixLength: Int, subPrefix: String, sid: String, subPath: String): Option[Handler] = {
     routeMap.get(subPath).flatMap { action =>
-      def next(id: C#IdentifierType) = () =>
-        action.routing(
-          controller,
-          id,
-          requestHeader,
-          requestHeader.path.take(prefixLength + subPrefix.length),
-          RouteFilterContext(name, Some(sid), Some(id), parentContext)
-        )
-      wrapper.routeFilterWrapper.filterTraverse(controller, requestHeader, name, sid, parentContext, next)
+      action.routing(controller, requestHeader, sid, prefix, parentContext)
     }
   }
 
@@ -153,14 +155,14 @@ class RestResourceRouter[C<:BaseResource: ResourceWrapper]( val controller: C,
         handleRoute(requestHeader, _prefix.length(), subPrefix, id, subPath)
 
       case "" | "/" => method match {
-        case "GET"     => wrapper.readWrapper.list(controller)
+        case "GET"     => wrapper.readWrapper.list(controller, requestHeader, path, parentContext)
         case "POST"    => wrapper.createWrapper(controller)
         case "OPTIONS" => Some(rootOptionsRoutingHandler())
         case _         => Some(methodNotAllowed)
       }
 
       case IdExpression(sid) => method match {
-        case "GET"     => wrapper.readWrapper(controller, sid)
+        case "GET"     => wrapper.readWrapper(controller, sid, requestHeader, path, parentContext)
         case "PUT"     => wrapper.writeWrapper(controller, sid)
         case "DELETE"  => wrapper.deleteWrapper(controller, sid)
         case "PATCH"   => wrapper.updateWrapper(controller, sid)
@@ -171,6 +173,8 @@ class RestResourceRouter[C<:BaseResource: ResourceWrapper]( val controller: C,
       case _ => None
     }
   }
+
+  def withParentContext(context: RouteFilterContext[_]): RestResourceRouter[C] = new RestResourceRouter(controller, routeMap, Some(context))
 }
 
 
