@@ -156,16 +156,16 @@ class RestResourceRouter[C<:BaseResource: ResourceWrapper]( val controller: C,
 
       case "" | "/" => method match {
         case "GET"     => wrapper.readWrapper.list(controller, requestHeader, path, parentContext)
-        case "POST"    => wrapper.createWrapper(controller)
+        case "POST"    => wrapper.createWrapper(controller, requestHeader, path, parentContext)
         case "OPTIONS" => Some(rootOptionsRoutingHandler())
         case _         => Some(methodNotAllowed)
       }
 
       case IdExpression(sid) => method match {
         case "GET"     => wrapper.readWrapper(controller, sid, requestHeader, path, parentContext)
-        case "PUT"     => wrapper.writeWrapper(controller, sid)
-        case "DELETE"  => wrapper.deleteWrapper(controller, sid)
-        case "PATCH"   => wrapper.updateWrapper(controller, sid)
+        case "PUT"     => wrapper.writeWrapper(controller, sid, requestHeader, path, parentContext)
+        case "DELETE"  => wrapper.deleteWrapper(controller, sid, requestHeader, path, parentContext)
+        case "PATCH"   => wrapper.updateWrapper(controller, sid, requestHeader, path, parentContext)
         case "OPTIONS" => controller.parseId(sid).map(res => idOptionsRoutingHandler())
         case _         => controller.parseId(sid).map(res => methodNotAllowed)
       }

@@ -51,8 +51,8 @@ object ReadResourceWrapper extends DefaultFilteredReadResourceWrapper{
     def apply(obj: T, sid: String, requestHeader: RequestHeader, path: String, parentContext: Option[RouteFilterContext[_]]) = {
       val id = obj.parseId(sid)
       obj.routeFilter.filterRead( requestHeader,
-          RouteFilterContext(path, Some(sid), id, parentContext),
-          nextFct(id, obj.readResource))
+                                  RouteFilterContext(path, Some(sid), id, parentContext),
+                                  nextFct(id, obj.readResource))
     }
 
     def list(obj: T, requestHeader: RequestHeader, path: String, parentContext: Option[RouteFilterContext[_]]) =
