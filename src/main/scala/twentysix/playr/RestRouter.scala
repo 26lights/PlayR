@@ -15,4 +15,5 @@ case class ActionRestRouteInfo(path: String, name: String, resourceType: Type, c
 
 trait RestRouter extends Router.Routes{
   def routeResources(path: String): Seq[RestRouteInfo]
+  def withParentContext(context: RouteFilterContext[_]): RestRouter
 }

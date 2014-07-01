@@ -10,6 +10,7 @@ import twentysix.playr.core.BaseResource
 
 trait ApiRouter extends RestRouter with SimpleRouter{
   def routeMap: Map[String, RestRouter]
+  def parentContext: Option[RouteFilterContext[_]]
 
   def routeResources(root: String): Seq[RestRouteInfo] = routeMap.flatMap{
     case (path, router) => router.routeResources(s"$root/$path")
@@ -22,8 +23,9 @@ trait ApiRouter extends RestRouter with SimpleRouter{
       case SubPathExpression(subPrefix, subPath) => {
         routeMap.get(subPath).flatMap{ router =>
           Router.Include {
-            router.setPrefix(prefix+subPrefix)
-            router
+            val subRouter = router.withParentContext(RouteFilterContext(subPath, None, None, parentContext))
+            subRouter.setPrefix(prefix+subPrefix)
+            subRouter
           }.unapply(requestHeader)
         }
       }
@@ -32,7 +34,7 @@ trait ApiRouter extends RestRouter with SimpleRouter{
   }
 }
 
-case class RestApiRouter(routeMap: Map[String, RestRouter] = Map()) extends ApiRouter {
+case class RestApiRouter(routeMap: Map[String, RestRouter] = Map(), parentContext: Option[RouteFilterContext[_]] = None) extends ApiRouter {
   def add(t: (String, RestRouter)) = this.copy(routeMap=routeMap + t)
   def add(apiRouter: RestApiRouter) = this.copy(routeMap=routeMap ++ apiRouter.routeMap)
   def add[C<:BaseResource: ResourceWrapper](router: RestResourceRouter[C]): RestApiRouter = this.add(router.name -> router)
@@ -42,6 +44,8 @@ case class RestApiRouter(routeMap: Map[String, RestRouter] = Map()) extends ApiR
   def :+(apiRouter: RestApiRouter) = this.add(apiRouter)
   def :+[C<:BaseResource: ResourceWrapper](router: RestResourceRouter[C]) = this.add(router)
   def :+[C<:BaseResource: ResourceWrapper](resource: C) = this.add(resource)
+
+  def withParentContext(context: RouteFilterContext[_]): RestApiRouter = this.copy(parentContext = Some(context))
 }
 
 object RestApiRouter {
