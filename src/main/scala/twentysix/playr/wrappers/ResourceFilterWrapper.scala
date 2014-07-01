@@ -5,6 +5,7 @@ import twentysix.playr.core.BaseResource
 import twentysix.playr.core.ResourceRouteFilter
 import twentysix.playr.RouteFilterContext
 import play.api.mvc.EssentialAction
+import twentysix.playr.ResourceCaps
 
 trait ResourceRouteFilterWrapper[T<:BaseResource] extends ResourceWrapperBase {
   def filterTraverse(controller: T, requestHeader: RequestHeader, path: String, sid: String,
@@ -28,7 +29,7 @@ trait DefaultResourceRouteFilterWrapper {
 
 
 object ResourceRouteFilterWrapper extends DefaultResourceRouteFilterWrapper {
-  implicit def resourceRouteFilterImpl[T<:BaseResource with ResourceRouteFilter] = new ResourceRouteFilterWrapper[T] with DefaultCaps {
+  implicit def resourceRouteFilterImpl[T<:BaseResource with ResourceRouteFilter] = new ResourceRouteFilterWrapper[T] {
     def filterTraverse(controller: T, requestHeader: RequestHeader, path: String, sid: String,
         parentContext: Option[RouteFilterContext[_]], next: T#IdentifierType => Option[Handler]) = {
       val id = controller.parseId(sid)
@@ -43,6 +44,7 @@ object ResourceRouteFilterWrapper extends DefaultResourceRouteFilterWrapper {
         requestHeader, RouteFilterContext(path, Some(sid), id, parentContext), nextFct(id, next)
       )
     }
+    val caps = ResourceCaps.ValueSet(ResourceCaps.Filtered)
   }
 }
 
