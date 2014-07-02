@@ -26,4 +26,4 @@ object PersonController extends Controller
   def list() = Action { Ok(Json.toJson(persons.keys)) }
 }
 
-object PersonRouter extends RestResourceRouter(PersonController)
+object PersonRouter extends RestResourceRouter(PersonController) with ApiInfo
