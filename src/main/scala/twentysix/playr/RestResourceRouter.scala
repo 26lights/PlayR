@@ -145,7 +145,7 @@ class RestResourceRouter[C<:BaseResource: ResourceWrapper]( val controller: C,
 
   def handleRoute(requestHeader: RequestHeader, prefixLength: Int, subPrefix: String, sid: String, subPath: String): Option[Handler] = {
     routeMap.get(subPath).flatMap { action =>
-      action.routing(controller, requestHeader, sid, prefix, parentContext)
+      action.routing(controller, requestHeader, sid, requestHeader.path.take(prefixLength + subPrefix.length), parentContext)
     }
   }
 
