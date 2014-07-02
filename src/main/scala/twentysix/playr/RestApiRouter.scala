@@ -8,13 +8,15 @@ import scala.language.implicitConversions
 import scala.reflect.runtime.universe._
 import twentysix.playr.core.BaseResource
 
-trait ApiRouter extends RestRouter with SimpleRouter{
-  def routeMap: Map[String, RestRouter]
-  def parentContext: Option[RouteFilterContext[_]]
+case class RestApiRouter(val name: String, routeMap: Map[String, RestRouter] = Map(), parentContext: Option[RouteFilterContext[_]] = None) extends RestRouter with SimpleRouter {
 
-  def routeResources(root: String): Seq[RestRouteInfo] = routeMap.flatMap{
-    case (path, router) => router.routeResources(s"$root/$path")
-  }.toSeq
+  def routeResource: RestRouteInfo = {
+    val subResources = routeMap.map {
+      case (path, router) => router.routeResource
+    }.toSeq
+
+    ApiRestRouteInfo(name, typeOf[RestApiRouter], ResourceCaps.ValueSet(ResourceCaps.Api), subResources)
+  }
 
   private val SubPathExpression = "^(/([^/]+)).*$".r
 
@@ -32,22 +34,23 @@ trait ApiRouter extends RestRouter with SimpleRouter{
       case _ => None
     }
   }
-}
 
-case class RestApiRouter(routeMap: Map[String, RestRouter] = Map(), parentContext: Option[RouteFilterContext[_]] = None) extends ApiRouter {
-  def add(t: (String, RestRouter)) = this.copy(routeMap=routeMap + t)
-  def add(apiRouter: RestApiRouter) = this.copy(routeMap=routeMap ++ apiRouter.routeMap)
-  def add[C<:BaseResource: ResourceWrapper](router: RestResourceRouter[C]): RestApiRouter = this.add(router.name -> router)
-  def add[C<:BaseResource: ResourceWrapper](resource: C): RestApiRouter = this.add(resource.name -> new RestResourceRouter(resource))
 
-  def :+(t: (String, RestRouter)) = this.add(t)
-  def :+(apiRouter: RestApiRouter) = this.add(apiRouter)
-  def :+[C<:BaseResource: ResourceWrapper](router: RestResourceRouter[C]) = this.add(router)
+  def add(router: RestRouter) = this.copy(routeMap=routeMap + (router.name -> router))
+  def addRoutes(apiRouter: RestApiRouter) = this.copy(routeMap=routeMap ++ apiRouter.routeMap)
+  def add[C<:BaseResource: ResourceWrapper](resource: C): RestApiRouter = this.add(new RestResourceRouter(resource))
+
+  def :+(router: RestRouter) = this.add(router)
+  def :++(apiRouter: RestApiRouter) = this.addRoutes(apiRouter)
   def :+[C<:BaseResource: ResourceWrapper](resource: C) = this.add(resource)
 
   def withParentContext(context: RouteFilterContext[_]): RestApiRouter = this.copy(parentContext = Some(context))
 }
 
+object RootApiRouter {
+  def apply() = RestApiRouter("")
+}
+
 object RestApiRouter {
-  implicit def controller2Router[C<:BaseResource: ResourceWrapper](t: (String, C)) = RestApiRouter(Map(t._1 -> new RestResourceRouter[C](t._2)))
+  implicit def controller2Router[C<:BaseResource: ResourceWrapper](t: (String, C)): RestRouter = new RestResourceRouter[C](t._2, path=Some(t._1))
 }

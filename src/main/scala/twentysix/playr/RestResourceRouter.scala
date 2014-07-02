@@ -20,7 +20,7 @@ sealed abstract class Routing[C<:BaseResource] {
                sid: String,
                prefix: String,
                parentContext: Option[RouteFilterContext[_]]): Option[Handler]
-  def routeInfo(path: String): RestRouteInfo
+  def routeInfo: RestRouteInfo
 
   val custom: Boolean
 }
@@ -54,7 +54,7 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
         }.unapply(requestHeader)
       wrapper.routeFilterWrapper.filterTraverse(controller, requestHeader, name, sid, parentContext, next)
     }
-    def routeInfo(path: String) = router.routerRouteResource(path)
+    def routeInfo = router.routeResource
 
     val custom = false
   }
@@ -72,7 +72,7 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
       }.unapply(requestHeader)
       wrapper.routeFilterWrapper.filterTraverse(controller, requestHeader, name, sid, parentContext, next)
     }
-    def routeInfo(path: String) = router.routerRouteResource(path)
+    def routeInfo = router.routeResource
     val custom = false
   }
 
@@ -87,13 +87,12 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
       else
         wrapper.routeFilterWrapper.filterCustom(controller, requestHeader, name, sid, parentContext, id => Some(Action { Results.MethodNotAllowed }))
     }
-    def routeInfo(path: String) = ActionRestRouteInfo(path, route, wrapper.controllerType, ResourceCaps.ValueSet(ResourceCaps.Action), Seq(), method)
+    def routeInfo = ActionRestRouteInfo(route, wrapper.controllerType, ResourceCaps.ValueSet(ResourceCaps.Action), Seq(), method)
     val custom = true
   }
 
-  def routeResources(root: String) = Seq(routerRouteResource(root))
-  def routerRouteResource(root: String) = ApiRestRouteInfo(root, name, wrapper.controllerType, caps, subRouteResources)
-  def subRouteResources = routeMap.map { t => t._2.routeInfo(t._1) }.toSeq
+  def routeResource = ApiRestRouteInfo(name, wrapper.controllerType, caps, subRouteResources)
+  def subRouteResources = routeMap.map { t => t._2.routeInfo }.toSeq
 
   def add(t: (String, Routing[C])): this.type = {
     routeMap = routeMap + t
@@ -115,10 +114,11 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
 
 
 class RestResourceRouter[C<:BaseResource: ResourceWrapper]( val controller: C,
+                                                            val path: Option[String] = None,
                                                             var routeMap: Map[String, Routing[C]]= Map[String, Routing[C]](),
                                                             val parentContext: Option[RouteFilterContext[_]] = None)
       extends AbstractRestResourceRouter[C] with RestRouter with SimpleRouter{
-  val name = controller.name
+  val name = path.getOrElse(controller.name)
 
   private val methodNotAllowed = Action { Results.MethodNotAllowed }
   private val IdExpression = "^/([^/]+)/?$".r
@@ -174,7 +174,7 @@ class RestResourceRouter[C<:BaseResource: ResourceWrapper]( val controller: C,
     }
   }
 
-  def withParentContext(context: RouteFilterContext[_]): RestResourceRouter[C] = new RestResourceRouter(controller, routeMap, Some(context))
+  def withParentContext(context: RouteFilterContext[_]): RestResourceRouter[C] = new RestResourceRouter(controller, path, routeMap, Some(context))
 }
 
 
@@ -184,6 +184,7 @@ class SubRestResourceRouter[P<:BaseResource, C <: BaseResource : ResourceWrapper
 
   def withParent(parent: P, id: P#IdentifierType, context: RouteFilterContext[P#IdentifierType]) = new RestResourceRouter[C](
     factory.construct(parent, id),
+    Some(name),
     routeMap,
     Some(context)
   )
