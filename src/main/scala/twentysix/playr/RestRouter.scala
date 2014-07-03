@@ -8,7 +8,7 @@ trait RestRouteInfo{
   val resourceType: Type
   val caps: ResourceCaps.ValueSet
   val subResources: Seq[RestRouteInfo]
-  val actions: RestRouteActionType.ValueSet = {
+  lazy val actions: RestRouteActionType.ValueSet = {
     RestRouteActionType.ValueSet( caps.flatMap {
       case ResourceCaps.Read => Seq(RestRouteActionType.Read, RestRouteActionType.List)
       case ResourceCaps.Write => Some(RestRouteActionType.Write)
@@ -24,7 +24,10 @@ trait RestRouteInfo{
 }
 
 case class ApiRestRouteInfo(name: String, resourceType: Type, caps: ResourceCaps.ValueSet, subResources: Seq[RestRouteInfo]) extends RestRouteInfo
-case class ActionRestRouteInfo(name: String, resourceType: Type, caps: ResourceCaps.ValueSet, subResources: Seq[RestRouteInfo], method: HttpMethod) extends RestRouteInfo
+case class ActionRestRouteInfo(name: String, resourceType: Type, method: HttpMethod) extends RestRouteInfo {
+  val subResources: Seq[RestRouteInfo] = Seq()
+  val caps: ResourceCaps.ValueSet = ResourceCaps.ValueSet(ResourceCaps.Action)
+}
 
 trait RestRouter extends Router.Routes{
   val name: String

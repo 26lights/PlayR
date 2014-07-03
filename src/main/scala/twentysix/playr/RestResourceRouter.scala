@@ -87,7 +87,7 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
       else
         wrapper.routeFilterWrapper.filterCustom(controller, requestHeader, name, sid, parentContext, id => Some(Action { Results.MethodNotAllowed }))
     }
-    def routeInfo = ActionRestRouteInfo(route, wrapper.controllerType, ResourceCaps.ValueSet(ResourceCaps.Action), Seq(), method)
+    def routeInfo = ActionRestRouteInfo(route, wrapper.controllerType, method)
     val custom = true
   }
 
@@ -99,14 +99,11 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
     this
   }
 
-  def add(route: String, router: SubRestResourceRouter[C, _]): this.type = add(route-> new SubResourceRouting(router))
-  def add(router: SubRestResourceRouter[C, _]): this.type = add(router.name, router)
-
-  def add(route: String, router: RestResourceRouter[_]): this.type = this.add(route-> new ResourceRouting(router))
-  def add(router: RestResourceRouter[_]): this.type = add(router.name, router)
+  def add(router: SubRestResourceRouter[C, _]): this.type = add(router.name -> new SubResourceRouting(router))
+  def add(router: RestResourceRouter[_]): this.type = this.add(router.name -> new ResourceRouting(router))
 
   def add[S<:BaseResource : ResourceWrapper](route: String, factory: ControllerFactory[C, S]): this.type =
-    this.add(route, new SubRestResourceRouter(route, factory))
+    this.add(new SubRestResourceRouter(route, factory))
 
   def add(route: String, method: HttpMethod, action: ResourceAction[C]): this.type =
     this.add(route-> new ActionRouting(method, action, route))
