@@ -40,4 +40,6 @@ case class EmployeeController(company: Company) extends RestRwdController[Employ
 
     employee.map(e=>Created(Json.toJson(e))).getOrElse(BadRequest)
   }
+
+  def function(employee: Employee) = Action( Ok(employee.function) )
 }
