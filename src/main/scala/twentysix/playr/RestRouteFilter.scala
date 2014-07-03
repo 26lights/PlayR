@@ -18,7 +18,7 @@ case class RouteFilterContext[T](path: String, sid: Option[String], id: Option[T
     }
   }
 
-  lazy val contextPath: String = _contextPath(this, Seq()).reverse.mkString("/")
+  lazy val contextPath: String = _contextPath(this, Seq(this.path)).reverse.mkString("/")
 }
 
 trait RestRouteFilter[T] {
