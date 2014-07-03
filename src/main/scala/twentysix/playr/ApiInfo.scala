@@ -29,9 +29,13 @@ trait ApiInfo {
 }
 
 object ApiInfo extends Controller {
-  def apply(router: RestRouter) = Action {
-
+  def apply(router: RestRouter) = Action { request =>
     val info = router.routeResource
-    Ok(Json.toJson(ApiInfoItem.fromRestRouteInfo(info.name, info)))
+    val json = Json.toJson(ApiInfoItem.fromRestRouteInfo(info.name, info))
+    if(request.queryString.contains("pretty")){
+      Ok(Json.prettyPrint(json))
+    } else {
+      Ok(json)
+    }
   }
 }
