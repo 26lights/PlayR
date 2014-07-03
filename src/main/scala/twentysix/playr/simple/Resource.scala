@@ -5,12 +5,16 @@ import play.api.mvc.EssentialAction
 import twentysix.playr.{ResourceWrapper, core}
 import twentysix.playr.core.{ControllerFactory, ResourceAction}
 
-trait Resource[R] extends core.ResourceTrait[R]
-                     with core.ResourceShortcuts{
+trait BaseResource extends core.BaseResource {
   def parseId(sid: String) = fromId(sid)
 
-  def handleAction(id: R, f: Function1[R, EssentialAction]) = Some(f(id))
-  def fromId(sid: String): Option[R]
+  def handleAction(id: IdentifierType, f: Function1[IdentifierType, EssentialAction]) = Some(f(id))
+  def fromId(sid: String): Option[IdentifierType]
+}
+
+trait Resource[R] extends BaseResource
+                     with core.ResourceShortcuts{
+  type IdentifierType = R
 }
 
 object Resource {
@@ -31,7 +35,7 @@ object Resource {
 }
 
 trait ResourceRead extends core.ResourceRead {
-  this: core.BaseResource =>
+  this: BaseResource =>
   def readResource(id: IdentifierType) = Some(read(id))
   def listResource = Some(list)
 
@@ -40,36 +44,34 @@ trait ResourceRead extends core.ResourceRead {
 }
 
 trait ResourceWrite extends core.ResourceWrite{
-  this: core.BaseResource =>
+  this: BaseResource =>
   def writeResource(id: IdentifierType) = Some(write(id))
 
   def write(id: IdentifierType): EssentialAction
 }
 
 trait ResourceDelete extends core.ResourceDelete {
-  this: core.BaseResource =>
+  this: BaseResource =>
   def deleteResource(id: IdentifierType) = Some(delete(id))
 
   def delete(id: IdentifierType): EssentialAction
 }
 
 trait ResourceUpdate extends core.ResourceUpdate {
-  this: core.BaseResource =>
+  this: BaseResource =>
   def updateResource(id: IdentifierType) = Some(update(id))
 
   def update(id: IdentifierType): EssentialAction
 }
 
 trait ResourceCreate extends core.ResourceCreate {
-  this: core.BaseResource =>
+  this: BaseResource =>
   def createResource = Some(create)
 
   def create: EssentialAction
 }
 
-trait ResourceRouteFilter extends core.ResourceRouteFilter {
-  this: core.BaseResource =>
-}
+trait ResourceRouteFilter extends BaseResource with core.ResourceRouteFilter
 
 //-------------------------
 //---- Shortcut traits ----
