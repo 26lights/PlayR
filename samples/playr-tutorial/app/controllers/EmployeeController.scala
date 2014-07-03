@@ -7,7 +7,7 @@ import play.api.libs.json.Json
 
 import models._
 
-case class EmployeeController(company: Company) extends RestRwdController[Employee]{
+case class EmployeeController(company: Company) extends RestRwdController[Employee] with LoggingFilter{
   val name = "employee"
 
   implicit val employeeFormat = Json.format[Employee]

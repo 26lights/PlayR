@@ -7,7 +7,7 @@ import play.api.libs.json.Json
 
 import models._
 
-object CompanyController extends RestCrudController[Company]{
+object CompanyController extends RestCrudController[Company] with LoggingFilter{
   val name = "company"
 
   def fromId(sid: String) = toInt(sid).flatMap(id => CompanyContainer.get(id))
