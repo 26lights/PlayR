@@ -83,9 +83,9 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
                  prefix: String,
                  parentContext: Option[RouteFilterContext[_]]): Option[Handler] = {
       if (method.name==requestHeader.method)
-        wrapper.routeFilterWrapper.filterCustom(controller, requestHeader, name, sid, parentContext, id => action.handleAction(controller, id))
+        wrapper.routeFilterWrapper.filterCustom(controller, requestHeader, route, sid, parentContext, id => action.handleAction(controller, id))
       else
-        wrapper.routeFilterWrapper.filterCustom(controller, requestHeader, name, sid, parentContext, id => Some(Action { Results.MethodNotAllowed }))
+        wrapper.routeFilterWrapper.filterCustom(controller, requestHeader, route, sid, parentContext, id => Some(Action { Results.MethodNotAllowed }))
     }
     def routeInfo = ActionRestRouteInfo(route, wrapper.controllerType, method)
     val custom = true
