@@ -10,7 +10,7 @@ import twentysix.playr.ResourceCaps
 trait ResourceRouteFilterWrapper[T<:BaseResource] extends ResourceWrapperBase {
   def filterTraverse(controller: T, requestHeader: RequestHeader, path: String, sid: String,
       parentContext: Option[RouteFilterContext[_]], next: T#IdentifierType => Option[Handler]): Option[Handler]
-  def filterCustom(controller: T, requestHeader: RequestHeader, path: String, sid: String,
+  def filterCustom(controller: T, requestHeader: RequestHeader, parentPath: String, path: String, sid: String,
       parentContext: Option[RouteFilterContext[_]], next: T#IdentifierType => Option[EssentialAction]): Option[EssentialAction]
 }
 
@@ -21,7 +21,7 @@ trait DefaultResourceRouteFilterWrapper {
         parentContext: Option[RouteFilterContext[_]], next: T#IdentifierType => Option[Handler]): Option[Handler] =
         controller.parseId(sid).flatMap(next(_))
 
-    def filterCustom(controller: T, requestHeader: RequestHeader, path: String, sid: String,
+    def filterCustom(controller: T, requestHeader: RequestHeader, parentPath: String, path: String, sid: String,
         parentContext: Option[RouteFilterContext[_]], next: T#IdentifierType => Option[EssentialAction]) =
       controller.parseId(sid).flatMap(next(_))
   }
@@ -37,11 +37,11 @@ object ResourceRouteFilterWrapper extends DefaultResourceRouteFilterWrapper {
         requestHeader, RouteFilterContext(path, Some(sid), id, parentContext), nextFct(id, next)
       )
     }
-    def filterCustom(controller: T, requestHeader: RequestHeader, path: String, sid: String,
+    def filterCustom(controller: T, requestHeader: RequestHeader, parentPath: String, path: String, sid: String,
         parentContext: Option[RouteFilterContext[_]], next: T#IdentifierType => Option[EssentialAction]) = {
       val id = controller.parseId(sid)
       controller.routeFilter.filterCustom(
-        requestHeader, RouteFilterContext(path, Some(sid), id, parentContext), nextFct(id, next)
+        requestHeader, RouteFilterContext(path, None, None, Some(RouteFilterContext(parentPath, Some(sid), id, parentContext))), nextFct(id, next)
       )
     }
     val caps = ResourceCaps.ValueSet(ResourceCaps.Filtered)
