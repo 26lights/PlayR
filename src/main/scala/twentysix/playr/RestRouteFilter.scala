@@ -1,11 +1,9 @@
 package twentysix.playr
 
-import play.api.mvc.SimpleResult
-import play.api.mvc.RequestHeader
-import RestRouteActionType._
-import play.api.mvc.Handler
-import play.api.mvc.EssentialAction
 import scala.annotation.tailrec
+
+import RestRouteActionType.{Create, Custom, Delete, List, Read, RestRouteActionType, Update, Write}
+import play.api.mvc.{EssentialAction, Handler, RequestHeader}
 
 case class RouteFilterContext[T](path: String, sid: Option[String], id: Option[T], parent: Option[RouteFilterContext[_]]) {
   @tailrec
