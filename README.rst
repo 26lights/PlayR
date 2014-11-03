@@ -47,14 +47,14 @@ To use Play'R in your sbt based project, you should add a resolver for the 26lig
 
 .. code-block:: scala
   
-  resolvers += "26Lights snapshots" at "http://build.26source.org/nexus/content/repositories/public-snapshots"
+  resolvers += "26Lights releases" at "http://build.26source.org/nexus/content/repositories/public-releases"
 
 and add Play'R to your library dependencies:
 
 .. code-block:: scala
   
   libraryDependencies ++= Seq (
-    "26lights"  %% "playr"  % "0.2.0-SNAPSHOT"
+    "26lights"  %% "playr"  % "0.4.0"
   )
 
 
