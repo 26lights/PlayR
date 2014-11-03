@@ -79,6 +79,6 @@ Contents
     demo
     basics
     tutorial/intro
-    API (scaladoc) <http://playr.26source.org/api>
+    API (scaladoc) <http://playr.26lights.com/api>
     license
     → by 26Lights <http://www.26lights.com>
