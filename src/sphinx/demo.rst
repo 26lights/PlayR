@@ -87,7 +87,7 @@ Finally, we define a ``RestResourceRouter`` instance that will route incoming re
 
 The only missing step is to reference this router in Play's routes file.
 
-.. code:: nginx
+.. code-block:: routes
 
   # Routes
   # This file defines all application routes (Higher priority routes first)

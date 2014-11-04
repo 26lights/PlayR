@@ -10,3 +10,4 @@ bin
 .pyenv
 .pydev*
 .tmpBin
+*.pyc
