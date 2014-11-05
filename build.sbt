@@ -26,3 +26,5 @@ libraryDependencies ++= Seq (
 site.settings
 
 site.sphinxSupport()
+
+site.includeScaladoc("api")
