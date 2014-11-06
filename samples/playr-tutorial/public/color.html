@@ -4,28 +4,107 @@
   <script src="jquery-2.1.1.min.js"></script>
   <script src="lodash.min.js"></script>
   <script src="api-jquery.js"></script>
+  
+  <style>
+    body {
+      font-family: sans;
+      padding: 2em;
+    }
+    
+    #colors p {
+      cursor: pointer; 
+    }
+    
+    #details {
+      padding: 1em;
+      float: right;
+      width: 45%;
+      border: solid black 1px;
+    }
+    
+    label { 
+      display: inline-block; 
+      width: 5em; 
+    }
+    
+    button {
+      float: right;
+    }
+    input {
+      border: solid black 1px;
+    }
+  </style>
+  
+  <script>
+    function showDetails(color) {
+      if(color===undefined) {
+        $("#colorId").text("");
+        $("#colorName").val("");
+        $("#colorRgb").val("");
+      } else {
+        $("#colorId").text(color.id);
+        $("#colorName").val(color.name);
+        $("#colorRgb").val(color.rgb);
+      }
+    }
+    
+    function refreshColors() {
+      restApi.Color.list().done(function(data) {
+        _.each(data, function(colorId) {
+          $("#colors").empty();
+          restApi.Color(colorId).read().done(function(color){
+            var colorElement = $("<p><span style='color:"+color.rgb+"'>&#x25A0;</span> "+color.name+"</p>");
+            colorElement.on("click", function(event) { showDetails(color) });
+            $("#colors").append(colorElement);
+          });
+        });
+      });
+    }
+  
+    function updateColor() {
+      var id = parseInt($("#colorId").text());
+      
+      if(id===undefined) {
+        return;
+      }
+      
+      restApi.Color(id).write({ 
+        id: id,
+        name: $("#colorName").val(),
+        rgb: $("#colorRgb").val()
+      }).done(refreshColors);
+    }
+  
+    function createColor() {
+      restApi.Color.create({
+        id: 0,
+        name: $("#colorName").val(),
+        rgb: $("#colorRgb").val()
+      }).done(refreshColors);
+    }
+  </script>
 </head>
 
 <body>
-  <script>
-  function refreshColors() {
-    restApi.Color.list().done(function(data) {
-      _.each(data, function(colorId) {
-        restApi.Color(colorId).read().done(function(color){
-          console.log(color);
-          $("#colors").append("<p><span style='color:"+color.rgb+"'>&#x25A0;</span> "+color.name+"</p>");
-        });
-      });
-    });
-  }
-  
-  refreshColors();
-  </script>
   
   <div>
+    <div id="details">
+      <h3>
+        Details
+        <button onclick="updateColor()">Update</button>
+        <button onclick="createColor()">Create</button>
+      </h3>
+      <div>
+        <p><label>Id:</label> <span id="colorId"></span></p>
+        <p><label>Name:</label> <input id="colorName" type="text"></input></p>
+        <p><label>RGB hex:</label> <input id="colorRgb" type="text"></input></p>
+      </div>
+    </div>
+
     <h1>Colors:</h1>
     <div id="colors">
     </div>
   </div>
+  <script>refreshColors();</script>
 </body>
 </html>

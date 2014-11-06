@@ -12,19 +12,19 @@
     case RestRouteActionType.Write => { 
       write: function(data) {
         return $.ajax(idUrl, {
-          type: "PUT", data: data
+          type: "PUT", data: JSON.stringify(data), dataType: "json", contentType: "application/json"
         });
       },}
     case RestRouteActionType.Update => { 
       update: function(data) {
         return $.ajax(idUrl, {
-          type: "PATCH", data: data
+          type: "PATCH", data: JSON.stringify(data), dataType: "json", contentType: "application/json"
         });
       },}
     case RestRouteActionType.Delete => { 
       remove: function() {
         return $.ajax(idUrl, {
-          type: "DELETE", data: data
+          type: "DELETE"
         });
       },}
     case RestRouteActionType.Traverse => { @for(child <- apiItem.children) {
@@ -50,7 +50,7 @@
   @if(apiItem.actions.contains(RestRouteActionType.Create)) {
   @(selfName).create = function(data) {
     return $.ajax(@(selfName).url, {
-      type: "POST", data: data
+      type: "POST", data: JSON.stringify(data), dataType: "json", contentType: "application/json"
     });
   }}
   @(selfName).url = path+"@JavaScript(apiItem.path)";
