@@ -10,7 +10,7 @@ import twentysix.playr.RootApiRouter
 import twentysix.playr.SubRestResourceRouter
 import models.Company
 
-object Application extends Controller {
+object Application extends Controller with JQueryApi {
 
   val employeeApi = new SubRestResourceRouter[CompanyController.type, EmployeeController]("employee", (company: Company) => EmployeeController(company))
     .add("function", GET, (e: EmployeeController) => e.function _)

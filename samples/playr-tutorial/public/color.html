@@ -1,0 +1,31 @@
+<html>
+
+<head>
+  <script src="jquery-2.1.1.min.js"></script>
+  <script src="lodash.min.js"></script>
+  <script src="api-jquery.js"></script>
+</head>
+
+<body>
+  <script>
+  function refreshColors() {
+    restApi.Color.list().done(function(data) {
+      _.each(data, function(colorId) {
+        restApi.Color(colorId).read().done(function(color){
+          console.log(color);
+          $("#colors").append("<p><span style='color:"+color.rgb+"'>&#x25A0;</span> "+color.name+"</p>");
+        });
+      });
+    });
+  }
+  
+  refreshColors();
+  </script>
+  
+  <div>
+    <h1>Colors:</h1>
+    <div id="colors">
+    </div>
+  </div>
+</body>
+</html>
