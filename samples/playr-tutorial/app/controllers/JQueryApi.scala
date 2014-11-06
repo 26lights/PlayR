@@ -35,7 +35,11 @@ object JQueryApiItem {
 trait JQueryApi extends Controller{
   val api: RestRouter
 
-  def jqueryApi = Action { request =>
+  def jqueryApi = JQueryApi(api)
+}
+
+object JQueryApi extends Controller{
+  def apply(api: RestRouter) = Action { request =>
     Ok(views.js.jquery(JQueryApiItem.fromRouteRouteInfo(api.routeResource), "/api"))
   }
 }
