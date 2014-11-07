@@ -40,6 +40,6 @@ trait JQueryApi extends Controller{
 
 object JQueryApi extends Controller{
   def apply(api: RestRouter) = Action { request =>
-    Ok(views.js.jquery(JQueryApiItem.fromRouteRouteInfo(api.routeResource), "/api"))
+    Ok(views.js.jquery(JQueryApiItem.fromRouteRouteInfo(api.routeResource), api.prefix))
   }
 }
