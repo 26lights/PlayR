@@ -84,6 +84,8 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
                  parentContext: Option[RouteFilterContext[_]]): Option[Handler] = {
       if (method.name==requestHeader.method)
         wrapper.routeFilterWrapper.filterCustom(controller, requestHeader, name, route, sid, parentContext, id => action.handleAction(controller, id))
+      else if (requestHeader.method=="OPTIONS")
+        wrapper.routeFilterWrapper.filterCustom(controller, requestHeader, name, route, sid, parentContext, id => Some(Action { Results.Ok.withHeaders(ALLOW -> method.name) }))
       else
         wrapper.routeFilterWrapper.filterCustom(controller, requestHeader, name, route, sid, parentContext, id => Some(Action { Results.MethodNotAllowed }))
     }
