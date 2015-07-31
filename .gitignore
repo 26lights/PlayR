@@ -4,7 +4,7 @@
 project/target
 target/
 .target
-.cache
+.cache*
 logs
 bin
 .pyenv
