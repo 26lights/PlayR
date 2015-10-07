@@ -1,7 +1,5 @@
 name := "playr"
 
-releaseSettings
-
 organization := "26lights"
 
 scalaVersion := "2.11.7"
