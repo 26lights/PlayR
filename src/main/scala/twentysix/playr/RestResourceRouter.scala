@@ -1,5 +1,7 @@
 package twentysix.playr
 
+import play.core.routing.Include
+
 import scala.language.reflectiveCalls
 import play.core.Router
 import play.api.mvc._
@@ -47,10 +49,9 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
                  prefix: String,
                  parentContext: Option[RouteFilterContext[_]]): Option[Handler] = {
       def next(id: C#IdentifierType) =
-        Router.Include {
+        Include {
           val subRouter = router.withParent(controller, id, RouteFilterContext(name, Some(sid), Some(id), parentContext))
-          subRouter.setPrefix(prefix)
-          subRouter
+          subRouter.withPrefix(prefix)
         }.unapply(requestHeader)
       wrapper.routeFilterWrapper.filterTraverse(controller, requestHeader, name, sid, parentContext, next)
     }
@@ -65,10 +66,9 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
                  sid: String,
                  prefix: String,
                  parentContext: Option[RouteFilterContext[_]]): Option[Handler] = {
-      def next(id: C#IdentifierType) = Router.Include {
+      def next(id: C#IdentifierType) = Include {
         val subRouter = router.withParentContext(RouteFilterContext(name, Some(sid), Some(id), parentContext))
-        subRouter.setPrefix(prefix)
-        subRouter
+        subRouter.withPrefix(prefix)
       }.unapply(requestHeader)
       wrapper.routeFilterWrapper.filterTraverse(controller, requestHeader, name, sid, parentContext, next)
     }

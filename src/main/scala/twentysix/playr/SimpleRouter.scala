@@ -1,15 +1,16 @@
 package twentysix.playr
 
-import play.core.Router
+import play.api.routing.Router
 import scala.runtime.AbstractPartialFunction
 import play.api.mvc.RequestHeader
 import play.api.mvc.Handler
 
-trait SimpleRouter extends Router.Routes{
+trait SimpleRouter extends Router{
   protected var _prefix: String =""
 
-  def setPrefix(newPrefix: String) = {
+  def withPrefix(newPrefix: String): SimpleRouter = {
     _prefix = newPrefix
+    this
   }
 
   def prefix = _prefix

@@ -1,5 +1,7 @@
 package twentysix.playr
 
+import play.core.routing.Include
+
 import scala.language.reflectiveCalls
 import play.core.Router
 import play.api.mvc._
@@ -24,10 +26,9 @@ case class RestApiRouter(name: String, routeMap: Map[String, RestRouter] = Map()
     path match {
       case SubPathExpression(subPrefix, subPath) => {
         routeMap.get(subPath).flatMap{ router =>
-          Router.Include {
+          Include {
             val subRouter = router.withParentContext(RouteFilterContext(name, None, None, parentContext))
-            subRouter.setPrefix(prefix+subPrefix)
-            subRouter
+            subRouter.withPrefix(prefix+subPrefix)
           }.unapply(requestHeader)
         }
       }

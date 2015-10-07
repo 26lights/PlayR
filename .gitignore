@@ -11,3 +11,4 @@ bin
 .pydev*
 .tmpBin
 *.pyc
+.idea

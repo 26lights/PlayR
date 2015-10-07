@@ -1,6 +1,6 @@
 package twentysix.playr
 
-import play.core.Router
+import play.api.routing.Router
 import reflect.runtime.universe.Type
 
 trait RestRouteInfo{
@@ -29,8 +29,9 @@ case class ActionRestRouteInfo(name: String, resourceType: Type, method: HttpMet
   val caps: ResourceCaps.ValueSet = ResourceCaps.ValueSet(ResourceCaps.Action)
 }
 
-trait RestRouter extends Router.Routes{
+trait RestRouter extends Router{
   val name: String
+  def prefix: String
   def routeResource: RestRouteInfo
   def withParentContext(context: RouteFilterContext[_]): RestRouter
 }
