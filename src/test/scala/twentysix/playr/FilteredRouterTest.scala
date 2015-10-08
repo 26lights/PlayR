@@ -1,14 +1,26 @@
 package twentysix.playr
 
 import org.scalatest.{FunSpec, Matchers}
+import play.api.http.HttpRequestHandler
+import play.api.mvc.{Results, Action, RequestHeader}
+import play.api.routing.Router
 import play.api.test.FakeApplication
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import twentysix.playr.core.BaseResource
 
 class FilteredRouterTest extends FunSpec with Matchers{
+  class SimpleHttpRequestHandler (router: Router) extends HttpRequestHandler {
+    def handlerForRequest(request: RequestHeader) = {
+      router.routes.lift(request) match {
+        case Some(handler) => (request, handler)
+        case None => (request, Action(Results.NotFound))
+      }
+    }
+  }
+
   class FakeApp[C<:BaseResource: ResourceWrapper](controller: C) extends FakeApplication {
-    override lazy val routes = Some(new RestResourceRouter[C](controller))
+    override def requestHandler = new SimpleHttpRequestHandler(new RestResourceRouter[C](controller))
   }
 
   def runningInApp[C<:BaseResource: ResourceWrapper, T](controller: C)(block: => T): T = {
@@ -19,13 +31,13 @@ class FilteredRouterTest extends FunSpec with Matchers{
     val extController = new ExtendedFilteredTestController
     val router = new RestResourceRouter[ExtendedFilteredTestController](extController)
       .add("hello", GET, extController.hello _)
-    override lazy val routes = Some(router)
+    override def requestHandler = new SimpleHttpRequestHandler(router)
   }
 
   describe("A RestResourceRouter with filtered controller") {
-    it("should return None for an unexpected resource id get"){ runningInApp(new TestControllerFilteredAll()) {
-      val result = route(FakeRequest("GET", "/test"))
-      result should be(None)
+    it("should return NotFound for an unexpected resource id get"){ runningInApp(new TestControllerFilteredAll()) {
+      val Some(result) = route(FakeRequest("GET", "/test"))
+      status(result) should be(NOT_FOUND)
     }}
     it("should return Ok(read) for an expected resource id get"){ runningInApp(new TestControllerFilteredAll()) {
       val Some(result) = route(FakeRequest("GET", "/26"))
@@ -87,9 +99,9 @@ class FilteredRouterTest extends FunSpec with Matchers{
       header(TestFilter.TestHeader, result) should be(Some(RestRouteActionType.Write.toString()))
       status(result) should be(METHOD_NOT_ALLOWED)
     }}
-    it("should return None for an unsuported post on an unexpected resource id"){ runningInApp(new TestControllerFilteredRead()) {
-      val result = route(FakeRequest("POST", "/bla"))
-      result should be(None)
+    it("should return NotFound for an unsuported post on an unexpected resource id"){ runningInApp(new TestControllerFilteredRead()) {
+      val Some(result) = route(FakeRequest("POST", "/bla"))
+      status(result) should be(NOT_FOUND)
     }}
 
     it("should return Ok('hello world') an expected resource id hello extension"){ running(new ExtendedControllerApp) {
