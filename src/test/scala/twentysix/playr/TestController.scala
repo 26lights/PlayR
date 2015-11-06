@@ -38,6 +38,9 @@ class TestControllerFilteredAll extends TestFilteredController with RestCrudCont
 
 class ExtendedTestController extends TestController {
   def hello(id: Boolean) = Action { Ok("hello world") }
+
+  def multiGet(id: Boolean) = Action { Ok("multi get") }
+  def multiPut(id: Boolean) = Action { Ok("multi put") }
 }
 
 class ExtendedFilteredTestController extends ExtendedTestController with ResourceRouteFilter {

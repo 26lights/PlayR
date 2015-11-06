@@ -77,20 +77,29 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
     val custom = false
   }
 
-  class ActionRouting(val method: HttpMethod, val action: ResourceAction[C], route: String) extends Routing[C] {
+  class ActionRouting(val actions: PartialFunction[HttpMethod, ResourceAction[C]], route: String) extends Routing[C] {
+    lazy val supportedHttpMethods = Set(GET, POST, DELETE, PUT, PATCH).filter( actions.isDefinedAt(_) )
+
     def routing( controller: C,
                  requestHeader: RequestHeader,
                  sid: String,
                  prefix: String,
                  parentContext: Option[RouteFilterContext[_]]): Option[Handler] = {
-      if (method.name==requestHeader.method)
-        wrapper.routeFilterWrapper.filterCustom(controller, requestHeader, name, route, sid, parentContext, id => action.handleAction(controller, id))
-      else if (requestHeader.method=="OPTIONS")
-        wrapper.routeFilterWrapper.filterCustom(controller, requestHeader, name, route, sid, parentContext, id => Some(Action { Results.Ok.withHeaders(ALLOW -> method.name) }))
-      else
+      HttpMethod.All.get(requestHeader.method).map {
+        actions.andThen { action =>
+          wrapper.routeFilterWrapper.filterCustom(controller, requestHeader, name, route, sid, parentContext, id => action.handleAction(controller, id))
+        } orElse {
+          case OPTIONS =>
+            wrapper.routeFilterWrapper.filterCustom(controller, requestHeader, name, route, sid, parentContext, id => Some(Action {
+              Results.Ok.withHeaders(ALLOW -> supportedHttpMethods.mkString(", "))
+            }))
+          case _ => wrapper.routeFilterWrapper.filterCustom(controller, requestHeader, name, route, sid, parentContext, id => Some(Action { Results.MethodNotAllowed }))
+        }
+      }.getOrElse {
         wrapper.routeFilterWrapper.filterCustom(controller, requestHeader, name, route, sid, parentContext, id => Some(Action { Results.MethodNotAllowed }))
+      }
     }
-    def routeInfo = ActionRestRouteInfo(route, wrapper.controllerType, method)
+    def routeInfo = ActionRestRouteInfo(route, wrapper.controllerType, supportedHttpMethods)
     val custom = true
   }
 
@@ -108,8 +117,14 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
   def add[S<:BaseResource : ResourceWrapper](route: String, factory: ControllerFactory[C, S]): this.type =
     this.add(new SubRestResourceRouter(route, factory))
 
-  def add(route: String, method: HttpMethod, action: ResourceAction[C]): this.type =
-    this.add(route-> new ActionRouting(method, action, route))
+  def add(route: String)(actions: PartialFunction[HttpMethod, ResourceAction[C]]): this.type =
+    this.add(route-> new ActionRouting(actions, route))
+
+  def add(route: String, method: HttpMethod, action: ResourceAction[C]): this.type = {
+    this.add(route) {
+      case method => action
+    }
+  }
 }
 
 
