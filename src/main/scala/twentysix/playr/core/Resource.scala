@@ -30,13 +30,21 @@ trait ResourceTrait[R] extends BaseResource {
 }
 
 /**
- * Respond to HTTP GET method
+ * Respond to HTTP GET method without id
+ */
+trait ResourceList {
+  this: BaseResource =>
+
+  def listResource: Option[EssentialAction]
+}
+
+/**
+ * Respond to HTTP GET method with an id
  */
 trait ResourceRead {
   this: BaseResource =>
 
   def readResource(id: IdentifierType): Option[EssentialAction]
-  def listResource: Option[EssentialAction]
 }
 
 /**

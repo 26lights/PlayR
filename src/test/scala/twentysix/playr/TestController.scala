@@ -17,6 +17,7 @@ class TestController extends Resource[Boolean] {
 }
 
 class TestControllerRead extends TestController with ResourceRead
+class TestControllerList extends TestController with ResourceList
 class TestControllerWrite extends TestController with ResourceWrite
 class TestControllerUpdate extends TestController with ResourceUpdate
 class TestControllerDelete extends TestController with ResourceDelete
@@ -32,6 +33,7 @@ class TestControllerFilteredWrite extends TestFilteredController with ResourceWr
 class TestControllerFilteredUpdate extends TestFilteredController with ResourceUpdate
 class TestControllerFilteredDelete extends TestFilteredController with ResourceDelete
 class TestControllerFilteredCreate extends TestFilteredController with ResourceCreate
+class TestControllerFilteredList extends TestFilteredController with ResourceList
 class TestControllerFilteredAll extends TestFilteredController with RestCrudController[Boolean] with ResourceUpdate
 
 class ExtendedTestController extends TestController {

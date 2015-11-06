@@ -34,6 +34,7 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
              wrapper.writeWrapper.caps ++
              wrapper.updateWrapper.caps ++
              wrapper.deleteWrapper.caps ++
+             wrapper.listWrapper.caps ++
              wrapper.createWrapper.caps ++ {
                if(routeMap.isEmpty) ResourceCaps.ValueSet.empty
                else ResourceCaps.ValueSet(ResourceCaps.Parent)
@@ -124,7 +125,7 @@ class RestResourceRouter[C<:BaseResource: ResourceWrapper]( val controller: C,
   private val SubResourceExpression = "^(/([^/]+)/([^/]+)).*$".r
 
   private val ROOT_OPTIONS = Map(
-    ResourceCaps.Read   -> "GET",
+    ResourceCaps.List   -> "GET",
     ResourceCaps.Create -> "POST"
   )
   private val ID_OPTIONS = Map(
@@ -154,7 +155,7 @@ class RestResourceRouter[C<:BaseResource: ResourceWrapper]( val controller: C,
         handleRoute(requestHeader, _prefix.length(), subPrefix, id, subPath)
 
       case "" | "/" => method match {
-        case "GET"     => wrapper.readWrapper.list(controller, requestHeader, name, parentContext)
+        case "GET"     => wrapper.listWrapper(controller, requestHeader, name, parentContext)
         case "POST"    => wrapper.createWrapper(controller, requestHeader, name, parentContext)
         case "OPTIONS" => Some(rootOptionsRoutingHandler())
         case _         => Some(methodNotAllowed)

@@ -9,7 +9,8 @@ class ResourceWrapperTest extends FunSpec with Matchers {
     wrapper.writeWrapper.caps ++
     wrapper.updateWrapper.caps ++
     wrapper.deleteWrapper.caps ++
-    wrapper.createWrapper.caps
+    wrapper.createWrapper.caps ++
+    wrapper.listWrapper.caps
   }
 
   describe("A ResourceWrapper") {
@@ -37,6 +38,16 @@ class ResourceWrapperTest extends FunSpec with Matchers {
       val wrapper = ResourceWrapper.resourceWrapperImpl[TestControllerCreate]
       it("should have Create in it's caps") {
         getCaps(wrapper) should be(ResourceCaps.ValueSet(ResourceCaps.Create))
+      }
+      it("should not have Read in it's caps") {
+        getCaps(wrapper) should not be(ResourceCaps.ValueSet(ResourceCaps.Read))
+      }
+    }
+
+    describe("when created for a BaseResourceList controller") {
+      val wrapper = ResourceWrapper.resourceWrapperImpl[TestControllerList]
+      it("should have List in it's caps") {
+        getCaps(wrapper) should be(ResourceCaps.ValueSet(ResourceCaps.List))
       }
       it("should not have Read in it's caps") {
         getCaps(wrapper) should not be(ResourceCaps.ValueSet(ResourceCaps.Read))
@@ -87,6 +98,9 @@ class ResourceWrapperTest extends FunSpec with Matchers {
       it("should have Delete in it's caps") {
         getCaps(wrapper) should contain(ResourceCaps.Delete)
       }
+      it("should have List in it's caps") {
+        getCaps(wrapper) should contain(ResourceCaps.List)
+      }
     }
 
     describe("when created for a Resource controller with filter") {
@@ -112,6 +126,9 @@ class ResourceWrapperTest extends FunSpec with Matchers {
       }
       it("should have Delete in it's caps") {
         getCaps(wrapper) should contain(ResourceCaps.Delete)
+      }
+      it("should have List in it's caps") {
+        getCaps(wrapper) should contain(ResourceCaps.List)
       }
     }
 
