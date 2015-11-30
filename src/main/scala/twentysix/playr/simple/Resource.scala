@@ -37,10 +37,8 @@ object Resource {
 trait ResourceRead extends core.ResourceRead {
   this: BaseResource =>
   def readResource(id: IdentifierType) = Some(read(id))
-  def listResource = Some(list)
 
   def read(id: IdentifierType): EssentialAction
-  def list: EssentialAction
 }
 
 trait ResourceWrite extends core.ResourceWrite{
@@ -71,6 +69,13 @@ trait ResourceCreate extends core.ResourceCreate {
   def create: EssentialAction
 }
 
+trait ResourceList extends core.ResourceList {
+  this: BaseResource =>
+  def listResource = Some(list)
+
+  def list: EssentialAction
+}
+
 trait ResourceRouteFilter extends BaseResource with core.ResourceRouteFilter
 
 //-------------------------
@@ -78,6 +83,7 @@ trait ResourceRouteFilter extends BaseResource with core.ResourceRouteFilter
 //-------------------------
 
 trait RestReadController[R] extends Resource[R]
+                               with ResourceList
                                with ResourceRead
 
 /**
@@ -85,6 +91,7 @@ trait RestReadController[R] extends Resource[R]
  */
 trait RestRwController[R] extends Resource[R]
                              with ResourceCreate
+                             with ResourceList
                              with ResourceRead
                              with ResourceUpdate
 
@@ -99,6 +106,7 @@ trait RestRwdController[R] extends RestRwController[R]
  */
 trait RestCrudController[R] extends Resource[R]
                                with ResourceCreate
+                               with ResourceList
                                with ResourceRead
                                with ResourceDelete
                                with ResourceWrite

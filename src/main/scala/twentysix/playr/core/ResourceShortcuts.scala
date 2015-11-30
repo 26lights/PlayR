@@ -22,7 +22,7 @@ trait ResourceShortcuts {
   def withValidBody[T: Reads](block: T => Result)(implicit request: Request[JsValue]): Result = {
     request.body.validate[T] match  {
       case s: JsSuccess[T] => block(s.get)
-      case e: JsError => BadRequest(JsError.toFlatJson(e))
+      case e: JsError => BadRequest(JsError.toJson(e))
     }
   }
 
@@ -33,7 +33,7 @@ trait ResourceShortcuts {
   def withValidBodyAsync[T: Reads](block: T => Future[Result])(implicit request: Request[JsValue]): Future[Result] = {
     request.body.validate[T] match  {
       case s: JsSuccess[T] => block(s.get)
-      case e: JsError => Future(BadRequest(JsError.toFlatJson(e)))
+      case e: JsError => Future(BadRequest(JsError.toJson(e)))
     }
   }
 
@@ -41,14 +41,14 @@ trait ResourceShortcuts {
     def withValidTransform[A <: JsValue](rds: Reads[A])(block: A => Result): Result = {
       value.transform(rds) match {
         case s: JsSuccess[A] => block(s.get)
-        case e: JsError => BadRequest(JsError.toFlatJson(e))
+        case e: JsError => BadRequest(JsError.toJson(e))
       }
     }
 
     def withValidTransformAsync[A <: JsValue](rds: Reads[A])(block: A => Future[Result]): Future[Result] = {
         value.transform(rds) match {
         case s: JsSuccess[A] => block(s.get)
-        case e: JsError => Future(BadRequest(JsError.toFlatJson(e)))
+        case e: JsError => Future(BadRequest(JsError.toJson(e)))
         }
     }
   }

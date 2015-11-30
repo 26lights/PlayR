@@ -17,6 +17,7 @@ trait ResourceWrapper[T<:BaseResource]{
   def writeWrapper: WriteResourceWrapper[T]
   def updateWrapper: UpdateResourceWrapper[T]
   def deleteWrapper: DeleteResourceWrapper[T]
+  def listWrapper: ListResourceWrapper[T]
   def createWrapper: CreateResourceWrapper[T]
   def routeFilterWrapper: ResourceRouteFilterWrapper[T]
   def controllerType: Type
@@ -24,6 +25,7 @@ trait ResourceWrapper[T<:BaseResource]{
 object ResourceWrapper {
   implicit def resourceWrapperImpl[C<:BaseResource
                                      :TypeTag
+                                     :ListResourceWrapper
                                      :ReadResourceWrapper
                                      :WriteResourceWrapper
                                      :UpdateResourceWrapper
@@ -36,6 +38,7 @@ object ResourceWrapper {
       val updateWrapper = implicitly[UpdateResourceWrapper[C]]
       val deleteWrapper = implicitly[DeleteResourceWrapper[C]]
       val createWrapper = implicitly[CreateResourceWrapper[C]]
+      val listWrapper = implicitly[ListResourceWrapper[C]]
       val routeFilterWrapper = implicitly[ResourceRouteFilterWrapper[C]]
       def controllerType = typeOf[C]
   }

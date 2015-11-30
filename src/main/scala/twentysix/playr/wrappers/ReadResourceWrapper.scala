@@ -11,14 +11,11 @@ import play.api.mvc.Handler
 
 trait ReadResourceWrapper[T<:BaseResource] extends ResourceWrapperBase{
   def apply(obj: T, sid: String, requestHeader: RequestHeader, path: String, parentContext: Option[RouteFilterContext[_]]): Option[Handler]
-  def list(obj: T, requestHeader: RequestHeader, path: String, parentContext: Option[RouteFilterContext[_]]): Option[Handler]
 }
 
 
 trait DefaultReadResourceWrapper{
-  implicit def identifiedResourceImpl[T<:BaseResource] = new ReadResourceWrapper[T] with DefaultApply[T]{
-    def list(obj: T, requestHeader: RequestHeader, path: String, parentContext: Option[RouteFilterContext[_]]) = Some(methodNotAllowed)
-  }
+  implicit def identifiedResourceImpl[T<:BaseResource] = new ReadResourceWrapper[T] with DefaultApply[T]
 }
 
 trait DefaultFilteredReadResourceWrapper extends DefaultReadResourceWrapper{
@@ -27,12 +24,6 @@ trait DefaultFilteredReadResourceWrapper extends DefaultReadResourceWrapper{
       obj.routeFilter.filterRead( requestHeader,
                                   RouteFilterContext(path, Some(sid), obj.parseId(sid), parentContext),
                                   () => Some(methodNotAllowed))
-
-    def list(obj: T, requestHeader: RequestHeader, path: String, parentContext: Option[RouteFilterContext[_]]) = {
-      obj.routeFilter.filterList( requestHeader,
-                                  RouteFilterContext(path, None, None, parentContext),
-                                  () => Some(methodNotAllowed))
-    }
   }
 }
 
@@ -41,8 +32,6 @@ object ReadResourceWrapper extends DefaultFilteredReadResourceWrapper{
   implicit def readResourceImpl[T<:BaseResource with ResourceRead] = new ReadResourceWrapper[T]{
     def apply(obj: T, sid: String, requestHeader: RequestHeader, path: String, parentContext: Option[RouteFilterContext[_]]) =
       obj.parseId(sid).flatMap(obj.readResource(_))
-
-    def list(obj: T, requestHeader: RequestHeader, path: String, parentContext: Option[RouteFilterContext[_]]) = obj.listResource
 
     val caps = ResourceCaps.ValueSet(ResourceCaps.Read)
   }
@@ -54,9 +43,6 @@ object ReadResourceWrapper extends DefaultFilteredReadResourceWrapper{
                                   RouteFilterContext(path, Some(sid), id, parentContext),
                                   nextFct(id, obj.readResource))
     }
-
-    def list(obj: T, requestHeader: RequestHeader, path: String, parentContext: Option[RouteFilterContext[_]]) =
-      obj.routeFilter.filterList(requestHeader, RouteFilterContext(path, None, None, parentContext), () => obj.listResource)
 
     val caps = ResourceCaps.ValueSet(ResourceCaps.Read)
   }
