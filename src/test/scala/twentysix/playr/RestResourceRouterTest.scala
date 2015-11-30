@@ -31,6 +31,11 @@ class RestResourceRouterTest extends FunSpec with Matchers{
     val extController = new ExtendedTestController
     val router = new RestResourceRouter[ExtendedTestController](extController)
       .add("hello", GET, extController.hello _)
+      .add("multi") {
+        case GET => extController.multiGet _
+        case PUT => extController.multiPut _
+      }
+
     override def requestHandler = new SimpleHttpRequestHandler(router)
   }
 
@@ -108,6 +113,35 @@ class RestResourceRouterTest extends FunSpec with Matchers{
       val Some(result) = route(FakeRequest("GET", "/26/hello"))
       status(result) should be(OK)
       contentAsString(result) should be("hello world")
+      header(TestFilter.TestHeader, result) should be(None)
+    }}
+
+    it("should return Ok('multi get') for an expected resource id multi extension"){ running(new ExtendedControllerApp) {
+      val Some(result) = route(FakeRequest("GET", "/26/multi"))
+      status(result) should be(OK)
+      contentAsString(result) should be("multi get")
+      header(TestFilter.TestHeader, result) should be(None)
+    }}
+
+    it("should return Ok('multi put') for an expected resource id multi extension"){ running(new ExtendedControllerApp) {
+      val Some(result) = route(FakeRequest("PUT", "/26/multi"))
+      status(result) should be(OK)
+      contentAsString(result) should be("multi put")
+      header(TestFilter.TestHeader, result) should be(None)
+    }}
+
+    it("should return MethodNotAllowed for an unsupported delete on a resource id multi extension"){ running(new ExtendedControllerApp) {
+      val Some(result) = route(FakeRequest("DELETE", "/26/multi"))
+      status(result) should be(METHOD_NOT_ALLOWED)
+      header(TestFilter.TestHeader, result) should be(None)
+    }}
+
+    it("should return GET, PUT for an OPTIONS request on a resource id multi extension"){ running(new ExtendedControllerApp) {
+      val Some(result) = route(FakeRequest("OPTIONS", "/26/multi"))
+      header(ALLOW, result) should not be(None)
+      header(ALLOW, result).get should include("GET")
+      header(ALLOW, result).get should include("PUT")
+      header(ALLOW, result).get should not include("DELETE")
       header(TestFilter.TestHeader, result) should be(None)
     }}
   }
