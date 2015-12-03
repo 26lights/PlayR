@@ -122,7 +122,7 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
 
   def add(route: String, method: HttpMethod, action: ResourceAction[C]): this.type = {
     this.add(route) {
-      case method => action
+      case `method` => action
     }
   }
 }
