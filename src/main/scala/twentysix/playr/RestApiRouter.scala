@@ -3,7 +3,6 @@ package twentysix.playr
 import play.core.routing.Include
 
 import scala.language.reflectiveCalls
-import play.core.Router
 import play.api.mvc._
 import scala.runtime.AbstractPartialFunction
 import scala.language.implicitConversions
