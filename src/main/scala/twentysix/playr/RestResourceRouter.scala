@@ -157,16 +157,16 @@ class RestResourceRouter[C<:BaseResource: ResourceWrapper]( val controller: C,
   def rootOptionsRoutingHandler = optionsRoutingHandler(ROOT_OPTIONS)
   def idOptionsRoutingHandler = optionsRoutingHandler(ID_OPTIONS)
 
-  def handleRoute(requestHeader: RequestHeader, prefixLength: Int, subPrefix: String, sid: String, subPath: String): Option[Handler] = {
+  def handleRoute(requestHeader: RequestHeader, subPrefix: String, sid: String, subPath: String): Option[Handler] = {
     routeMap.get(subPath).flatMap { action =>
-      action.routing(controller, requestHeader, sid, requestHeader.path.take(prefixLength + subPrefix.length), parentContext)
+      action.routing(controller, requestHeader, sid, requestHeader.path.take(subPrefix.length), parentContext)
     }
   }
 
   def routeRequest(requestHeader: RequestHeader, path: String, method: String): Option[Handler] = {
     path match {
       case SubResourceExpression(subPrefix, id, subPath) =>
-        handleRoute(requestHeader, _prefix.length(), subPrefix, id, subPath)
+        handleRoute(requestHeader, subPrefix, id, subPath)
 
       case "" | "/" => method match {
         case "GET"     => wrapper.listWrapper(controller, requestHeader, name, parentContext)

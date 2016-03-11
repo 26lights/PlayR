@@ -31,7 +31,6 @@ case class ActionRestRouteInfo(name: String, resourceType: Type, methods: Set[Ht
 
 trait RestRouter extends Router{
   val name: String
-  def prefix: String
   def routeResource: RestRouteInfo
   def withParentContext(context: RouteFilterContext[_]): RestRouter
 }

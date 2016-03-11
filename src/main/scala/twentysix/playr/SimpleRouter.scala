@@ -4,33 +4,33 @@ import play.api.routing.Router
 import scala.runtime.AbstractPartialFunction
 import play.api.mvc.RequestHeader
 import play.api.mvc.Handler
+import play.api.Logger
 
-trait SimpleRouter extends Router{
-  protected var _prefix: String =""
-
-  def withPrefix(newPrefix: String): SimpleRouter = {
-    _prefix = newPrefix
-    this
-  }
-
-  def prefix = _prefix
-  def documentation = Nil
-
+trait SimpleRouter extends Router { self =>
   def routeRequest(header: RequestHeader, path: String, method: String): Option[Handler]
-  
-  def routes = new AbstractPartialFunction[RequestHeader, Handler] {
-    override def applyOrElse[A <: RequestHeader, B>: Handler]( requestHeader: A, default: A => B) = {
-      if(requestHeader.path.startsWith(_prefix)) {
-        val path = requestHeader.path.drop(_prefix.length())
-        val method = requestHeader.method
-        routeRequest(requestHeader, path, method).getOrElse(default(requestHeader))
-      } else {
-        default(requestHeader)
+
+  def documentation: Seq[(String, String, String)] = Seq.empty
+
+  def withPrefix(prefix: String): Router = {
+    if ((prefix=="") || (prefix == "/")) {
+      self
+    } else {
+      new Router {
+        def routes = {
+          val p = if (prefix.endsWith("/")) prefix.drop(1) else prefix
+          val prefixed: PartialFunction[RequestHeader, RequestHeader] = {
+            case rh: RequestHeader if rh.path.startsWith(p) => rh.copy(path = rh.path.drop(p.length))
+          }
+          Function.unlift(prefixed.lift.andThen(_.flatMap(self.routes.lift)))
+        }
+        def withPrefix(prefix: String) = self.withPrefix(prefix)
+        def documentation = self.documentation
       }
     }
+  }
 
-    def isDefinedAt(requestHeader: RequestHeader): Boolean = {
-      requestHeader.path.startsWith(_prefix)
-    }
+  def routes = Function.unlift { requestHeader =>
+    Logger.debug(s"request: ${requestHeader.path}")
+    routeRequest(requestHeader, requestHeader.path, requestHeader.method)
   }
 }

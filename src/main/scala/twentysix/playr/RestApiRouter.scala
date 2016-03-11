@@ -27,7 +27,7 @@ case class RestApiRouter(name: String, routeMap: Map[String, RestRouter] = Map()
         routeMap.get(subPath).flatMap{ router =>
           Include {
             val subRouter = router.withParentContext(RouteFilterContext(name, None, None, parentContext))
-            subRouter.withPrefix(prefix+subPrefix)
+            subRouter.withPrefix(subPrefix)
           }.unapply(requestHeader)
         }
       }
