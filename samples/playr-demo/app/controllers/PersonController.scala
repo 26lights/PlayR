@@ -4,20 +4,34 @@ import play.api.mvc._
 import twentysix.playr._
 import twentysix.playr.simple._
 import play.api.libs.json.Json
+import play.api.Logger
+import javax.inject.Inject
+import com.google.inject.ImplementedBy
 
 case class Person(name: String)
 
-object PersonController extends Controller
-                           with Resource[Person]
-                           with ResourceRead {
-  def name = "person"
+@ImplementedBy(classOf[Persons])
+trait PersonList {
+  val persons: Map[Int, Person]
+}
 
-  def persons = Map(
+class Persons extends PersonList{
+  val persons = Map(
     1 -> Person("john"),
     2 -> Person("jane")
   )
+}
+
+
+class PersonController @Inject() (personList: PersonList) extends Controller
+                                                             with Resource[Person]
+                                                             with ResourceRead
+                                                             with ResourceList {
+  def name = "person"
 
   implicit val personFormat = Json.format[Person]
+
+  val persons = personList.persons
 
   def fromId(sid: String): Option[Person] = toInt(sid).flatMap(persons.get(_))
 
@@ -26,4 +40,6 @@ object PersonController extends Controller
   def list() = Action { Ok(Json.toJson(persons.keys)) }
 }
 
-object PersonRouter extends RestResourceRouter(PersonController) with ApiInfo
+class PersonRouter extends RestResourceRouter(new PersonController(new Persons())) with ApiInfo {
+  Logger.debug(s"Router instance created.")
+}

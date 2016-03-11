@@ -4,3 +4,5 @@
 
 GET     /api-info                   controllers.PersonRouter.apiInfo
 ->      /person                     controllers.PersonRouter
+
+GET      /play/person                controllers.PersonController.list()
