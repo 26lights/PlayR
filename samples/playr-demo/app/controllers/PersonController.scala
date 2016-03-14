@@ -22,11 +22,10 @@ class Persons extends PersonList{
   )
 }
 
-
-class PersonController @Inject() (personList: PersonList) extends Controller
-                                                             with Resource[Person]
-                                                             with ResourceRead
-                                                             with ResourceList {
+case class PersonController(personList: PersonList) extends Controller
+                                                       with Resource[Person]
+                                                       with ResourceRead
+                                                       with ResourceList {
   def name = "person"
 
   implicit val personFormat = Json.format[Person]
@@ -40,6 +39,7 @@ class PersonController @Inject() (personList: PersonList) extends Controller
   def list() = Action { Ok(Json.toJson(persons.keys)) }
 }
 
-class PersonRouter extends RestResourceRouter(new PersonController(new Persons())) with ApiInfo {
-  Logger.debug(s"Router instance created.")
+class PersonRouter @Inject() (personList: PersonList) extends RestResourceRouter(PersonController(personList)) with ApiInfo {
+
+  Logger.debug(s"Router instance created with person list: $personList")
 }
