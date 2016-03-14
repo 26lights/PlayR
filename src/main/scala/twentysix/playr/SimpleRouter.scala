@@ -6,7 +6,13 @@ import play.api.mvc.RequestHeader
 import play.api.mvc.Handler
 import play.api.Logger
 
-trait SimpleRouter extends Router { self =>
+trait PrefixAware {
+  val routerPrefix: String
+}
+
+trait SimpleRouter extends Router with PrefixAware{ self =>
+  val routerPrefix = ""
+
   def routeRequest(header: RequestHeader, path: String, method: String): Option[Handler]
 
   def documentation: Seq[(String, String, String)] = Seq.empty
@@ -15,14 +21,16 @@ trait SimpleRouter extends Router { self =>
     if ((prefix=="") || (prefix == "/")) {
       self
     } else {
-      new Router {
+      val p = if (prefix.endsWith("/")) prefix.drop(1) else prefix
+      new Router with PrefixAware{
         def routes = {
-          val p = if (prefix.endsWith("/")) prefix.drop(1) else prefix
           val prefixed: PartialFunction[RequestHeader, RequestHeader] = {
             case rh: RequestHeader if rh.path.startsWith(p) => rh.copy(path = rh.path.drop(p.length))
           }
           Function.unlift(prefixed.lift.andThen(_.flatMap(self.routes.lift)))
         }
+        val routerPrefix = p
+
         def withPrefix(prefix: String) = self.withPrefix(prefix)
         def documentation = self.documentation
       }
