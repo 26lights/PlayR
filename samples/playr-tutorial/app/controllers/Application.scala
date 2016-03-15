@@ -41,5 +41,8 @@ class Application @Inject()(val cache: CacheApi) extends PlayRRouter with PlayRI
     .add(new ColorController)
     .add(crmApi)
 
-  val info = Map("info" -> ApiInfo, "jquery.js" -> JQueryApi)
+  val info = Map(
+    "info" -> ApiInfo,
+    "jquery.js" -> JQueryApi
+  )
 }
