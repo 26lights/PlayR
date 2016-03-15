@@ -1,10 +1,12 @@
 package models
 
+import play.api.cache.CacheApi
+
 case class Employee(companyId: Int, personId: Int, function: String) extends CachedItem {
   val id = companyId * 10000 + personId
 }
 
-object EmployeeContainer extends CachedContainer[Employee]{
+case class EmployeeContainer(cache: CacheApi) extends CachedContainer[Employee]{
   val cacheKey = "employee"
 
   val defaultItems = Map(

@@ -1,8 +1,10 @@
 package models
 
+import play.api.cache.CacheApi
+
 case class Company(id: Int, name: String) extends CachedItem
 
-object CompanyContainer extends CachedContainer[Company]{
+case class CompanyContainer(cache: CacheApi) extends CachedContainer[Company]{
   val cacheKey = "company"
 
   val defaultItems = Map(

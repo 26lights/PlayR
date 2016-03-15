@@ -1,8 +1,10 @@
 package models
 
+import play.api.cache.CacheApi
+
 case class Color(id: Int, name: String, rgb: String) extends CachedItem
 
-object ColorContainer extends CachedContainer[Color]{
+case class ColorContainer(cache: CacheApi) extends CachedContainer[Color]{
   val cacheKey = "colors"
 
   val defaultItems = Map(

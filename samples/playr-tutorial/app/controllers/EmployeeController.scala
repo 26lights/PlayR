@@ -7,26 +7,26 @@ import play.api.libs.json.Json
 
 import models._
 
-case class EmployeeController(company: Company) extends RestRwdController[Employee] with LoggingFilter{
+case class EmployeeController(company: Company)(implicit employeeContainer: EmployeeContainer, personContainer: PersonContainer) extends RestRwdController[Employee] with LoggingFilter{
   val name = "employee"
 
   implicit val employeeFormat = Json.format[Employee]
 
-  def fromId(sid: String) = toInt(sid).flatMap(id => EmployeeContainer.get(id))
+  def fromId(sid: String) = toInt(sid).flatMap(id => employeeContainer.get(id))
 
-  def list = Action { Ok(Json.toJson(EmployeeContainer.filterList(_.companyId==company.id))) }
+  def list = Action { Ok(Json.toJson(employeeContainer.filterList(_.companyId==company.id))) }
 
   def read(employee: Employee) = Action { Ok(Json.toJson(employee)) }
 
   def delete(employee: Employee) = Action {
-    EmployeeContainer.delete(employee)
+    employeeContainer.delete(employee)
     NoContent
   }
 
   def update(employee: Employee) = Action { request =>
     request.body.asText match {
       case Some(function) =>
-        Ok(Json.toJson(EmployeeContainer.update(employee.copy(function=function))))
+        Ok(Json.toJson(employeeContainer.update(employee.copy(function=function))))
       case None           => BadRequest("Invalid name")
     }
   }
@@ -34,9 +34,9 @@ case class EmployeeController(company: Company) extends RestRwdController[Employ
   def create = Action(parse.json) { request =>
     val employee = for {
       personId <- (request.body \ "personId").asOpt[Int]
-      person <- PersonContainer.get(personId)
+      person <- personContainer.get(personId)
       function <- (request.body \ "function").asOpt[String]
-    } yield EmployeeContainer.add(company, person, function)
+    } yield employeeContainer.add(company, person, function)
 
     employee.map(e=>Created(Json.toJson(e))).getOrElse(BadRequest)
   }
