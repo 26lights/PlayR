@@ -29,7 +29,7 @@ case class ActionRestRouteInfo(name: String, resourceType: Type, methods: Set[Ht
   val caps: ResourceCaps.ValueSet = ResourceCaps.ValueSet(ResourceCaps.Action)
 }
 
-trait RestRouter extends Router with PrefixAware{
+trait RestRouter extends Router{
   val name: String
   def routeResource: RestRouteInfo
   def withParentContext(context: RouteFilterContext[_]): RestRouter

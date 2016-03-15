@@ -9,6 +9,7 @@ import models._
 
 object ColorController extends Resource[Color]
                           with ResourceRead
+                          with ResourceList
                           with ResourceCreate
                           with ResourceWrite {
   val name = "color"

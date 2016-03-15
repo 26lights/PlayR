@@ -3,34 +3,34 @@
 <head>
   <script src="jquery-2.1.1.min.js"></script>
   <script src="lodash.min.js"></script>
-  <script src="api-jquery.js"></script>
-  
+  <script src="/api/jquery.js"></script>
+
   <style>
     body {
       font-family: sans;
       padding: 2em;
     }
-    
+
     #colors p {
-      cursor: pointer; 
+      cursor: pointer;
     }
-    
+
     #colors p span{
-      font-size: 2em; 
+      font-size: 2em;
     }
-    
+
     #details {
       padding: 1em;
       float: right;
       width: 45%;
       border: solid black 1px;
     }
-    
-    label { 
-      display: inline-block; 
-      width: 5em; 
+
+    label {
+      display: inline-block;
+      width: 5em;
     }
-    
+
     button {
       float: right;
     }
@@ -38,7 +38,7 @@
       border: solid black 1px;
     }
   </style>
-  
+
   <script>
     function showDetails(color) {
       if(color===undefined) {
@@ -51,7 +51,7 @@
         $("#colorRgb").val(color.rgb);
       }
     }
-    
+
     function refreshColors() {
       restApi.Color.list().done(function(data) {
         _.each(data, function(colorId) {
@@ -64,21 +64,21 @@
         });
       });
     }
-  
+
     function updateColor() {
       var id = parseInt($("#colorId").text());
-      
+
       if(id===undefined) {
         return;
       }
-      
-      restApi.Color(id).write({ 
+
+      restApi.Color(id).write({
         id: id,
         name: $("#colorName").val(),
         rgb: $("#colorRgb").val()
       }).done(refreshColors);
     }
-  
+
     function createColor() {
       restApi.Color.create({
         id: 0,
@@ -90,7 +90,7 @@
 </head>
 
 <body>
-  
+
   <div>
     <div id="details">
       <h3>

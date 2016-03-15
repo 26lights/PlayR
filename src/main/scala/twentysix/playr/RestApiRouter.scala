@@ -52,4 +52,3 @@ case class RestApiRouter(name: String, routeMap: Map[String, RestRouter] = Map()
 object RootApiRouter {
   def apply() = RestApiRouter("")
 }
-

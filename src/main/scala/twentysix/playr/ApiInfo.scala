@@ -7,6 +7,7 @@ import twentysix.playr.RestRouteActionType._
 import play.api.libs.json.Json
 import play.api.libs.json.Writes
 import play.api.libs.json.JsString
+import twentysix.playr.di.PlayRInfoConsumer
 
 case class ApiInfoItem(path: String, label: String, actions: RestRouteActionType.ValueSet, children: Seq[ApiInfoItem])
 object ApiInfoItem {
@@ -25,11 +26,11 @@ object ApiInfoItem {
 trait ApiInfo {
   this: RestRouter =>
 
-  def apiInfo = ApiInfo(this)
+  def apiInfo = ApiInfo("", this)
 }
 
-object ApiInfo extends Controller {
-  def apply(router: RestRouter) = Action { request =>
+object ApiInfo extends Controller with PlayRInfoConsumer{
+  def apply(prefix: String, router: RestRouter) = Action { request =>
     val info = router.routeResource
     val json = Json.toJson(ApiInfoItem.fromRestRouteInfo(info.name, info))
     if(request.queryString.contains("pretty")){

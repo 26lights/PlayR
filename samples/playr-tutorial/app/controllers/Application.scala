@@ -9,8 +9,11 @@ import twentysix.playr.ApiInfo
 import twentysix.playr.RootApiRouter
 import twentysix.playr.SubRestResourceRouter
 import models.Company
+import javax.inject.Inject
+import twentysix.playr.di._
+import twentysix.playr.RestApiRouter
 
-object Application {
+class Application extends PlayRRouter with PlayRInfo {
 
   val employeeApi = new SubRestResourceRouter[CompanyController.type, EmployeeController]("employee", (company: Company) => EmployeeController(company))
     .add("function", GET, (e: EmployeeController) => e.function _)
@@ -22,12 +25,9 @@ object Application {
       .add(employeeApi)
     )
 
-
   val api = RootApiRouter()
     .add(ColorController)
     .add(crmApi)
 
-  val apiInfo = ApiInfo(api)
-
-  val jqueryApi = JQueryApi(api)
+  val info = Map("info" -> ApiInfo, "jquery.js" -> JQueryApi)
 }

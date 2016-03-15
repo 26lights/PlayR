@@ -6,6 +6,7 @@ import play.api.mvc.Action
 import twentysix.playr.RestRouteActionType
 import twentysix.playr.RestRouteInfo
 import twentysix.playr.ResourceCaps
+import twentysix.playr.di.PlayRInfoConsumer
 
 case class JQueryApiItem(path: String, name: String, actions: RestRouteActionType.ValueSet, children: Seq[JQueryApiItem])
 
@@ -35,11 +36,11 @@ object JQueryApiItem {
 trait JQueryApi extends Controller{
   val api: RestRouter
 
-  def jqueryApi = JQueryApi(api)
+  def jqueryApi = JQueryApi("", api)
 }
 
-object JQueryApi extends Controller{
-  def apply(api: RestRouter) = Action { request =>
-    Ok(views.js.jquery(JQueryApiItem.fromRouteRouteInfo(api.routeResource), api.routerPrefix))
+object JQueryApi extends Controller with PlayRInfoConsumer{
+  def apply(prefix: String, api: RestRouter) = Action { request =>
+    Ok(views.js.jquery(JQueryApiItem.fromRouteRouteInfo(api.routeResource), prefix))
   }
 }
