@@ -16,9 +16,8 @@ trait RouterWithPrefix extends Router { self =>
       self
     } else {
       new Router {
-        val p = if (prefix.endsWith("/")) prefix.drop(1) else prefix
-
         def routes = {
+          val p = if (prefix.endsWith("/")) prefix.drop(1) else prefix
           val prefixed: PartialFunction[RequestHeader, RequestHeader] = {
             case rh: RequestHeader if rh.path.startsWith(p) => {
               rh.copy(path = rh.path.drop(p.length))

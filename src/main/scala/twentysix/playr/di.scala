@@ -1,5 +1,6 @@
 package twentysix.playr
 
+import scala.language.implicitConversions
 import play.api.mvc.Controller
 import play.api.mvc.RequestHeader
 import play.api.mvc.Handler
@@ -19,7 +20,19 @@ object di {
   }
 
   trait PlayRInfoConsumer {
-    def apply(prefix: String, api: RestRouter): EssentialAction
+    trait ConsumerRoutes {
+      def toRoutes(path: String): Router.Routes
+    }
+    object ConsumerRoutes {
+      implicit def fromAction(action: EssentialAction) = new ConsumerRoutes {
+        def toRoutes(path: String) = { case rh if ((rh.path == "/" + path) && (rh.method=="GET")) => action }
+      }
+      implicit def fromRouter(router: Router) = new ConsumerRoutes {
+        def toRoutes(path: String) = router.withPrefix("/" + path).routes
+      }
+    }
+
+    def apply(prefix: String, api: RestRouter): ConsumerRoutes
   }
 
   trait PlayRInfo { self: PlayRRouter =>
@@ -30,10 +43,10 @@ object di {
       (router, entry) => {
         val path = entry._1
         val handler = entry._2(prefix, api)
-        router orElse {
-          case rh if ((rh.path == "/"+ path) && (rh.method=="GET")) => handler
-        }
+        router orElse handler.toRoutes(path)
       }
+    } orElse PartialFunction[RequestHeader, Handler]{
+      case rh: RequestHeader => Action(r => Ok(s"not found $rh (${rh.method} ${rh.path})"))
     }
 
     override def routes = routesWithPrefix("")
