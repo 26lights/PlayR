@@ -45,8 +45,6 @@ object di {
         val handler = entry._2(prefix, api)
         router orElse handler.toRoutes(path)
       }
-    } orElse PartialFunction[RequestHeader, Handler]{
-      case rh: RequestHeader => Action(r => Ok(s"not found $rh (${rh.method} ${rh.path})"))
     }
 
     override def routes = routesWithPrefix("")
