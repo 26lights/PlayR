@@ -34,6 +34,18 @@ object di {
 
     def apply(prefix: String, api: RestRouter): ConsumerRoutes
   }
+  object PlayRInfoConsumer {
+    implicit def fromActionProvider(provider: (String, RestRouter) => EssentialAction) = {
+      new PlayRInfoConsumer {
+        def apply(prefix: String, api: RestRouter): ConsumerRoutes = provider(prefix, api)
+      }
+    }
+    implicit def fromSimpleAction(provider: => EssentialAction) = {
+      new PlayRInfoConsumer {
+        def apply(prefix: String, api: RestRouter): ConsumerRoutes = provider
+      }
+    }
+  }
 
   trait PlayRInfo { self: PlayRRouter =>
 
