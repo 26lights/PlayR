@@ -18,9 +18,7 @@ import models.EmployeeContainer
 import models.CompanyContainer
 import models.PersonContainer
 
-class Application @Inject()(val cache: CacheApi) extends PlayRRouter with PlayRInfo {
-
-  implicit val colorContainer = ColorContainer(cache)
+class CrmApi @Inject()(val cache: CacheApi) {
   implicit val employeeContainer = EmployeeContainer(cache)
   implicit val personContainer = PersonContainer(cache)
   implicit val companyContainer = CompanyContainer(cache)
@@ -30,16 +28,21 @@ class Application @Inject()(val cache: CacheApi) extends PlayRRouter with PlayRI
 
   val companyController = new CompanyController
 
-  val crmApi = RestApiRouter("crm")
+  val router = RestApiRouter("crm")
     .add(new PersonController)
     .add(new RestResourceRouter(companyController)
       .add("functions", GET, companyController.functions _)
       .add(employeeApi)
     )
+}
+
+class Application @Inject()(val cache: CacheApi, crmApi: CrmApi) extends PlayRRouter with PlayRInfo {
+
+  implicit val colorContainer = ColorContainer(cache)
 
   val api = RootApiRouter()
     .add(new ColorController)
-    .add(crmApi)
+    .add(crmApi.router)
 
   val info = Map(
     "info" -> ApiInfo,
