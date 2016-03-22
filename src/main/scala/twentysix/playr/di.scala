@@ -13,6 +13,13 @@ import play.api.routing.Router
  * Helper traits to help creating dependency injectable play'r routers
  */
 object di {
+  trait PlayRSubRouter {
+    def router: RestApiRouter
+  }
+  object PlayRSubRouter {
+    implicit def subRouterToApiROuter(router: PlayRSubRouter): RestApiRouter = router.router
+  }
+
   trait PlayRRouter extends RouterWithPrefix{
     val api: RestApiRouter
 
