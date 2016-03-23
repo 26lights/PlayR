@@ -8,6 +8,7 @@ import twentysix.playr.GET
 import twentysix.playr.ApiInfo
 import twentysix.playr.RootApiRouter
 import twentysix.playr.SubRestResourceRouter
+import twentysix.playr.utils.EnumValuesController
 import models.Company
 import javax.inject.Inject
 import twentysix.playr.di._
@@ -17,6 +18,7 @@ import models.ColorContainer
 import models.EmployeeContainer
 import models.CompanyContainer
 import models.PersonContainer
+import models.DaysEnum
 
 class CrmApi @Inject()(val cache: CacheApi) extends PlayRSubRouter{
   implicit val employeeContainer = EmployeeContainer(cache)
@@ -43,6 +45,7 @@ class Application @Inject()(val cache: CacheApi, crmApi: CrmApi) extends PlayRRo
   val api = RootApiRouter()
     .add(new ColorController)
     .add(crmApi)
+    .add(EnumValuesController(DaysEnum))
 
   val info = Map(
     "info" -> ApiInfo,
