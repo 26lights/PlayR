@@ -124,6 +124,9 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
       case `method` => action
     }
   }
+
+  def addSubRouter[S<:BaseResource : ResourceWrapper](route: String, factory: ControllerFactory[C, S])(block: SubRestResourceRouter[C, S] => SubRestResourceRouter[C, S]): this.type =
+    this.add(block(new SubRestResourceRouter(route, factory)))
 }
 
 

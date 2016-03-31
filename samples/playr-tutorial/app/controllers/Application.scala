@@ -25,16 +25,15 @@ class CrmApi @Inject()(val cache: CacheApi) extends PlayRSubRouter{
   implicit val personContainer = PersonContainer(cache)
   implicit val companyContainer = CompanyContainer(cache)
 
-  val employeeApi = new SubRestResourceRouter[CompanyController, EmployeeController]("employee", (company: Company) => EmployeeController(company))
-    .add("function", GET, (e: EmployeeController) => e.function _)
-
   val companyController = new CompanyController
 
   val router = RestApiRouter("crm")
     .add(new PersonController)
     .add(new RestResourceRouter(companyController)
       .add("functions", GET, companyController.functions _)
-      .add(employeeApi)
+      .addSubRouter("employee", (company: Company) => EmployeeController(company)) { _
+        .add("function", GET, (e: EmployeeController) => e.function _)
+      }
     )
 }
 
