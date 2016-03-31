@@ -40,6 +40,10 @@ case class RestApiRouter(name: String, routeMap: Map[String, RestRouter] = Map()
   def addRoutes(apiRouter: RestApiRouter) = this.copy(routeMap=routeMap ++ apiRouter.routeMap)
   def add[C<:BaseResource: ResourceWrapper](resource: C): RestApiRouter = this.add(new RestResourceRouter[C](resource))
   def add[C<:BaseResource: ResourceWrapper](t: (String, C)): RestApiRouter = this.add(new RestResourceRouter[C](t._2, path=Some(t._1)))
+  def addResource[C<:BaseResource: ResourceWrapper](resource: C)(block: RestResourceRouter[C]=>RestResourceRouter[C]): RestApiRouter =
+    this.add(block(new RestResourceRouter(resource)))
+  def addResource[C<:BaseResource: ResourceWrapper](t: (String, C))(block: RestResourceRouter[C]=>RestResourceRouter[C]): RestApiRouter =
+    this.add(block(new RestResourceRouter[C](t._2, path=Some(t._1))))
 
   def :+(router: RestRouter) = this.add(router)
   def ++(apiRouter: RestApiRouter) = this.addRoutes(apiRouter)
