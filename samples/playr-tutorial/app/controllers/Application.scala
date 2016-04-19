@@ -45,6 +45,7 @@ class Application @Inject()(val cache: CacheApi, crmApi: CrmApi) extends PlayRRo
     .add(new ColorController)
     .add(crmApi)
     .add(EnumValuesController(DaysEnum))
+    .withFilter(LoggingFilter)
 
   val info = Map(
     "info" -> ApiInfo,

@@ -6,17 +6,7 @@ import RestRouteActionType.{Create, Custom, Delete, List, Read, RestRouteActionT
 import play.api.mvc.{EssentialAction, Handler, RequestHeader}
 
 case class RouteFilterContext[T](path: String, sid: Option[String], id: Option[T], parent: Option[RouteFilterContext[_]]) {
-  @tailrec
-  private def _contextPath(context: RouteFilterContext[_], sequence: Seq[String]): Seq[String] = {
-    if(!context.parent.isDefined) {
-      sequence
-    } else {
-      val parent = context.parent.get
-      _contextPath(parent, sequence :+ parent.path)
-    }
-  }
-
-  lazy val contextPath: String = _contextPath(this, Seq(this.path)).reverse.mkString("/")
+  lazy val contextPath: String = parent.map( p => s"${p.contextPath}/$path" ).getOrElse(path)
 }
 
 trait RestRouteFilter[T] {

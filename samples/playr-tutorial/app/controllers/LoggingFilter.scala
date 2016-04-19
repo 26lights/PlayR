@@ -14,6 +14,8 @@ import twentysix.playr.RestRouteFilter
 import twentysix.playr.SimpleRestRouteFilter
 import twentysix.playr.RouteFilterContext
 import twentysix.playr.RestRouteActionType._
+import twentysix.playr.RestRouterFilter
+import twentysix.playr.RestRouterFilter
 
 trait LoggingFilter extends ResourceRouteFilter {
   val routeFilter: RestRouteFilter[IdentifierType] = new SimpleRestRouteFilter[IdentifierType] {
@@ -29,5 +31,16 @@ trait LoggingFilter extends ResourceRouteFilter {
       Logger.debug(s"[filter] traverse path=${context.path} (${context.contextPath})")
       next()
     }
+  }
+}
+
+object LoggingFilter extends RestRouterFilter {
+  def logAction(action: RestRouteActionType, path: String)(rh: RequestHeader, next: () => Option[Handler]) = {
+    Logger.debug(s"[global filter] $action path=$path from=${rh.remoteAddress}")
+    next()
+  }
+
+  def filter = {
+    case route => logAction(route.action, route.path)
   }
 }
