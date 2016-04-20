@@ -37,60 +37,71 @@ class GlobalFilterRouterTest extends FunSpec with Matchers with PlayRApp{
       val Some(result) = route(app, FakeRequest("GET", "/26"))
       status(result) should be(OK)
       header(TestFilter.TestHeader, result) should be(Some(RestRouteActionType.Read.toString()))
+      header(TestFilter.TestPathHeader, result) should be(Some("test"))
       contentAsString(result) should be("read")
     }}
     it("should return Ok(write) for an expected resource id put"){ withFilteredApp(new TestControllerAll()) { app =>
       val Some(result) = route(app, FakeRequest("PUT", "/26"))
       status(result) should be(OK)
       header(TestFilter.TestHeader, result) should be(Some(RestRouteActionType.Write.toString()))
+      header(TestFilter.TestPathHeader, result) should be(Some("test"))
       contentAsString(result) should be("write")
     }}
     it("should return NoContent for an expected resource id delete"){ withFilteredApp(new TestControllerAll()) { app =>
       val Some(result) = route(app, FakeRequest("DELETE", "/26"))
       header(TestFilter.TestHeader, result) should be(Some(RestRouteActionType.Delete.toString()))
+      header(TestFilter.TestPathHeader, result) should be(Some("test"))
       status(result) should be(NO_CONTENT)
     }}
     it("should return Ok(update) for an expected resource id patch"){ withFilteredApp(new TestControllerAll()) { app =>
       val Some(result) = route(app, FakeRequest("PATCH", "/26"))
       status(result) should be(OK)
       header(TestFilter.TestHeader, result) should be(Some(RestRouteActionType.Update.toString()))
+      header(TestFilter.TestPathHeader, result) should be(Some("test"))
       contentAsString(result) should be("update")
     }}
     it("should return MethodNotAllowed for an expected resource id post"){ withFilteredApp(new TestControllerAll()) { app =>
       val Some(result) = route(app, FakeRequest("POST", "/26"))
       header(TestFilter.TestHeader, result) should be(None)
+      header(TestFilter.TestPathHeader, result) should be(None)
       status(result) should be(METHOD_NOT_ALLOWED)
     }}
     it("should return Ok(list) for an expected resource get"){ withFilteredApp(new TestControllerAll()) { app =>
       val Some(result) = route(app, FakeRequest("GET", "/"))
       status(result) should be(OK)
       header(TestFilter.TestHeader, result) should be(Some(RestRouteActionType.List.toString()))
+      header(TestFilter.TestPathHeader, result) should be(Some("test"))
       contentAsString(result) should be("list")
     }}
     it("should return Created(create) for an expected resource post"){ withFilteredApp(new TestControllerAll()) { app =>
       val Some(result) = route(app, FakeRequest("POST", "/"))
       status(result) should be(CREATED)
       header(TestFilter.TestHeader, result) should be(Some(RestRouteActionType.Create.toString()))
+      header(TestFilter.TestPathHeader, result) should be(Some("test"))
       contentAsString(result) should be("create")
     }}
     it("should return MethodNotAllowed for an unexpected http method"){ withFilteredApp(new TestControllerAll()) { app =>
       val Some(result) = route(app, FakeRequest("PUT", "/"))
       header(TestFilter.TestHeader, result) should be(None)
+      header(TestFilter.TestPathHeader, result) should be(None)
       status(result) should be(METHOD_NOT_ALLOWED)
     }}
     it("should return MethodNotAllowed for an unsuported post"){ withFilteredApp(new TestControllerRead()) { app =>
       val Some(result) = route(app, FakeRequest("POST", "/"))
       header(TestFilter.TestHeader, result) should be(Some(RestRouteActionType.Create.toString()))
+      header(TestFilter.TestPathHeader, result) should be(Some("test"))
       status(result) should be(METHOD_NOT_ALLOWED)
     }}
     it("should return MethodNotAllowed for an unsuported delete on an expected resource id"){ withFilteredApp(new TestControllerRead()) { app =>
       val Some(result) = route(app, FakeRequest("DELETE", "/26"))
       header(TestFilter.TestHeader, result) should be(Some(RestRouteActionType.Delete.toString()))
+      header(TestFilter.TestPathHeader, result) should be(Some("test"))
       status(result) should be(METHOD_NOT_ALLOWED)
     }}
     it("should return MethodNotAllowed for an unsuported put on an expected resource id"){ withFilteredApp(new TestControllerRead()) { app =>
       val Some(result) = route(app, FakeRequest("PUT", "/26"))
       header(TestFilter.TestHeader, result) should be(Some(RestRouteActionType.Write.toString()))
+      header(TestFilter.TestPathHeader, result) should be(Some("test"))
       status(result) should be(METHOD_NOT_ALLOWED)
     }}
     it("should return NotFound for an unsuported post on an unexpected resource id"){ withFilteredApp(new TestControllerRead()) { app =>
@@ -102,7 +113,7 @@ class GlobalFilterRouterTest extends FunSpec with Matchers with PlayRApp{
       val Some(result) = route(app, FakeRequest("GET", "/26/hello"))
       status(result) should be(OK)
       header(TestFilter.TestHeader, result) should be(Some(RestRouteActionType.Custom.toString()))
-      header(TestFilter.TestPathHeader, result) should be(Some("hello"))
+      header(TestFilter.TestPathHeader, result) should be(Some("test/hello"))
       contentAsString(result) should be("hello world")
     }}
   }

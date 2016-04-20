@@ -107,7 +107,7 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
         }.getOrElse {
           id => Some(Action { Results.MethodNotAllowed })
         }
-      ApplyRouterFilter(filter, Custom, RouteFilterContext.pathWithParent(parentContext, route), requestHeader) { () =>
+      ApplyRouterFilter(filter, Custom, RouteFilterContext.pathWithParent(parentContext, s"$name/$route" ), requestHeader) { () =>
         wrapper.routeFilterWrapper.filterCustom(controller, requestHeader, name, route, sid, parentContext, next)
       }
     }
