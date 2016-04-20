@@ -14,13 +14,7 @@ case class TestFilter() extends SimpleRestRouteFilter[Boolean] {
               context: RouteFilterContext[Boolean],
               next: () => Option[EssentialAction] ) = {
     val nextAction = next()
-    nextAction.map { action =>
-      EssentialAction { rh =>
-        action(rh).map { result =>
-          result.withHeaders(TestFilter.TestHeader -> actionType.toString())
-        }
-      }
-    }
+    nextAction.map(TestFilter.testAction(actionType, context.contextPath))
   }
 
   def filterTraverse( requestHeader: RequestHeader,
@@ -33,4 +27,16 @@ case class TestFilter() extends SimpleRestRouteFilter[Boolean] {
 
 object TestFilter {
   val TestHeader = "X-TEST-FILTER"
+  val TestPathHeader = "X-TEST-PATH"
+
+  def testAction(actionType: RestRouteActionType, path: String)(action: EssentialAction) = {
+    EssentialAction { rh =>
+      action(rh).map { result =>
+        result.withHeaders(
+          TestFilter.TestHeader -> actionType.toString(),
+          TestFilter.TestPathHeader -> path
+        )
+      }
+    }
+  }
 }

@@ -13,4 +13,10 @@ trait PlayRApp {
 
   def withApp[C<:BaseResource: ResourceWrapper, T](controller: C)(block: (Application) => T): T =
     withApp(new RestResourceRouter[C](controller))(block)
+
+  def withFilteredApp[T](router: RestResourceRouter[_])(block: (Application) => T)(implicit filter: RestRouterFilter): T =
+    withApp(router.withFilter(filter))(block)
+
+  def withFilteredApp[C<:BaseResource: ResourceWrapper, T](controller: C)(block: (Application) => T)(implicit filter: RestRouterFilter): T =
+    withFilteredApp(new RestResourceRouter[C](controller))(block)
 }
