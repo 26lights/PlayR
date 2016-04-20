@@ -9,15 +9,6 @@ import play.api.test.Helpers._
 import twentysix.playr.core.BaseResource
 
 class RestResourceRouterTest extends FunSpec with Matchers with PlayRApp{
-  class SimpleHttpRequestHandler (router: Router) extends HttpRequestHandler {
-    def handlerForRequest(request: RequestHeader) = {
-      router.routes.lift(request) match {
-        case Some(handler) => (request, handler)
-        case None => (request, Action(Results.NotFound))
-      }
-    }
-  }
-
   def extRestRouter = {
     val extController = new ExtendedTestController
     new RestResourceRouter[ExtendedTestController](extController)

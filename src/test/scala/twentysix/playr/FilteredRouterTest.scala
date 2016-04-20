@@ -11,15 +11,6 @@ import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 
 class FilteredRouterTest extends FunSpec with Matchers with PlayRApp{
-  class SimpleHttpRequestHandler (router: Router) extends HttpRequestHandler {
-    def handlerForRequest(request: RequestHeader) = {
-      router.routes.lift(request) match {
-        case Some(handler) => (request, handler)
-        case None => (request, Action(Results.NotFound))
-      }
-    }
-  }
-
   def extResourceRouter = {
     val extController = new ExtendedFilteredTestController
     new RestResourceRouter[ExtendedFilteredTestController](extController)
