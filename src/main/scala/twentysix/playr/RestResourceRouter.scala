@@ -10,6 +10,7 @@ import scala.reflect.runtime.universe._
 import scala.annotation.Annotation
 import scala.annotation.ClassfileAnnotation
 import scala.annotation.StaticAnnotation
+import twentysix.playr.RestRouteActionType._
 import twentysix.playr.core.BaseResource
 import twentysix.playr.core.ResourceAction
 import twentysix.playr.core.ControllerFactory
@@ -55,7 +56,9 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
           val subRouter = router.withParent(controller, id, RouteFilterContext(name, Some(sid), Some(id), parentContext), filter)
           subRouter.withPrefix(prefix)
         }.unapply(requestHeader)
-      wrapper.routeFilterWrapper.filterTraverse(controller, requestHeader, name, sid, parentContext, next)
+      ApplyRouterFilter(filter, Traverse, RouteFilterContext.pathWithParent(parentContext, name), requestHeader) { () =>
+        wrapper.routeFilterWrapper.filterTraverse(controller, requestHeader, name, sid, parentContext, next)
+      }
     }
     def routeInfo = router.routeResource
 
@@ -73,7 +76,9 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
         val subRouter = router.withParentContext(RouteFilterContext(name, Some(sid), Some(id), parentContext), filter)
         subRouter.withPrefix(prefix)
       }.unapply(requestHeader)
-      wrapper.routeFilterWrapper.filterTraverse(controller, requestHeader, name, sid, parentContext, next)
+      ApplyRouterFilter(filter, Traverse, RouteFilterContext.pathWithParent(parentContext, name), requestHeader) { () =>
+        wrapper.routeFilterWrapper.filterTraverse(controller, requestHeader, name, sid, parentContext, next)
+      }
     }
     def routeInfo = router.routeResource
     val custom = false
@@ -88,18 +93,22 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
                  prefix: String,
                  filter: Option[RestRouterFilter],
                  parentContext: Option[RouteFilterContext[_]]): Option[Handler] = {
-      HttpMethod.All.get(requestHeader.method).map {
-        actions.andThen { action =>
-          wrapper.routeFilterWrapper.filterCustom(controller, requestHeader, name, route, sid, parentContext, id => action.handleAction(controller, id))
-        } orElse {
-          case OPTIONS =>
-            wrapper.routeFilterWrapper.filterCustom(controller, requestHeader, name, route, sid, parentContext, id => Some(Action {
-              Results.Ok.withHeaders(ALLOW -> supportedHttpMethods.mkString(", "))
-            }))
-          case _ => wrapper.routeFilterWrapper.filterCustom(controller, requestHeader, name, route, sid, parentContext, id => Some(Action { Results.MethodNotAllowed }))
+      val next: (C#IdentifierType) => Option[EssentialAction] =
+        HttpMethod.All.get(requestHeader.method).map {
+          actions.andThen { action =>
+            id: C#IdentifierType => action.handleAction(controller, id)
+          } orElse {
+            case OPTIONS =>
+              id: C#IdentifierType => Some(Action {
+                Results.Ok.withHeaders(ALLOW -> supportedHttpMethods.mkString(", "))
+              })
+            case _ => id: C#IdentifierType => Some(Action { Results.MethodNotAllowed })
+          }
+        }.getOrElse {
+          id => Some(Action { Results.MethodNotAllowed })
         }
-      }.getOrElse {
-        wrapper.routeFilterWrapper.filterCustom(controller, requestHeader, name, route, sid, parentContext, id => Some(Action { Results.MethodNotAllowed }))
+      ApplyRouterFilter(filter, Custom, RouteFilterContext.pathWithParent(parentContext, route), requestHeader) { () =>
+        wrapper.routeFilterWrapper.filterCustom(controller, requestHeader, name, route, sid, parentContext, next)
       }
     }
     def routeInfo = ActionRestRouteInfo(route, wrapper.controllerType, supportedHttpMethods)
@@ -142,6 +151,8 @@ class RestResourceRouter[C<:BaseResource: ResourceWrapper]( val controller: C,
       extends AbstractRestResourceRouter[C] with RestRouter with SimpleRouter{
   val name = path.getOrElse(controller.name)
 
+  private lazy val contextPath = RouteFilterContext.pathWithParent(parentContext, name)
+
   private val methodNotAllowed = Action { Results.MethodNotAllowed }
   private val IdExpression = "^/([^/]+)/?$".r
   private val SubResourceExpression = "^(/([^/]+)/([^/]+)).*$".r
@@ -172,22 +183,26 @@ class RestResourceRouter[C<:BaseResource: ResourceWrapper]( val controller: C,
   }
 
   def routeRequest(requestHeader: RequestHeader, path: String, method: String): Option[Handler] = {
+    def filterRoute(action: RestRouteActionType, block: () => Option[Handler]) = {
+      ApplyRouterFilter(filter, action, contextPath, requestHeader)(block)
+    }
+
     path match {
       case SubResourceExpression(subPrefix, id, subPath) =>
         handleRoute(requestHeader, subPrefix, id, subPath)
 
       case "" | "/" => method match {
-        case "GET"     => wrapper.listWrapper(controller, requestHeader, name, parentContext)
-        case "POST"    => wrapper.createWrapper(controller, requestHeader, name, parentContext)
+        case "GET"     => filterRoute(List,   () => wrapper.listWrapper(controller, requestHeader, name, parentContext))
+        case "POST"    => filterRoute(Create, () => wrapper.createWrapper(controller, requestHeader, name, parentContext))
         case "OPTIONS" => Some(rootOptionsRoutingHandler())
         case _         => Some(methodNotAllowed)
       }
 
       case IdExpression(sid) => method match {
-        case "GET"     => wrapper.readWrapper(controller, sid, requestHeader, name, parentContext)
-        case "PUT"     => wrapper.writeWrapper(controller, sid, requestHeader, name, parentContext)
-        case "DELETE"  => wrapper.deleteWrapper(controller, sid, requestHeader, name, parentContext)
-        case "PATCH"   => wrapper.updateWrapper(controller, sid, requestHeader, name, parentContext)
+        case "GET"     => filterRoute(Read,   () => wrapper.readWrapper(controller, sid, requestHeader, name, parentContext))
+        case "PUT"     => filterRoute(Write,  () => wrapper.writeWrapper(controller, sid, requestHeader, name, parentContext))
+        case "DELETE"  => filterRoute(Delete, () => wrapper.deleteWrapper(controller, sid, requestHeader, name, parentContext))
+        case "PATCH"   => filterRoute(Update, () => wrapper.updateWrapper(controller, sid, requestHeader, name, parentContext))
         case "OPTIONS" => controller.parseId(sid).map(res => idOptionsRoutingHandler())
         case _         => controller.parseId(sid).map(res => methodNotAllowed)
       }
