@@ -24,7 +24,7 @@ trait RestRouteInfo{
 }
 
 case class ApiRestRouteInfo(name: String, resourceType: Type, caps: ResourceCaps.ValueSet, subResources: Seq[RestRouteInfo]) extends RestRouteInfo
-case class ActionRestRouteInfo(name: String, resourceType: Type, methods: Set[HttpMethod]) extends RestRouteInfo {
+case class ActionRestRouteInfo(name: String, resourceType: Type, methods: Set[HttpMethod], attributes: Map[HttpMethod, Map[Any, Any]]) extends RestRouteInfo {
   val subResources: Seq[RestRouteInfo] = Seq()
   val caps: ResourceCaps.ValueSet = ResourceCaps.ValueSet(ResourceCaps.Action)
 }

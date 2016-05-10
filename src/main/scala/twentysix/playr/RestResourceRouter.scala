@@ -84,7 +84,7 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
     val custom = false
   }
 
-  class ActionRouting(val actions: PartialFunction[HttpMethod, ResourceAction[C]], route: String) extends Routing[C] {
+  class ActionRouting(val actions: PartialFunction[HttpMethod, ResourceAction[C]], route: String, attributes: Map[HttpMethod, Map[Any, Any]]) extends Routing[C] {
     lazy val supportedHttpMethods = Set(GET, POST, DELETE, PUT, PATCH).filter( actions.isDefinedAt(_) )
 
     def routing( controller: C,
@@ -111,7 +111,7 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
         wrapper.routeFilterWrapper.filterCustom(controller, requestHeader, name, route, sid, parentContext, next)
       }
     }
-    def routeInfo = ActionRestRouteInfo(route, wrapper.controllerType, supportedHttpMethods)
+    def routeInfo = ActionRestRouteInfo(route, wrapper.controllerType, supportedHttpMethods, attributes)
     val custom = true
   }
 
@@ -129,14 +129,20 @@ abstract class AbstractRestResourceRouter[C<:BaseResource: ResourceWrapper] {
   def add[S<:BaseResource : ResourceWrapper](route: String, factory: ControllerFactory[C, S]): this.type =
     this.add(new SubRestResourceRouter(route, factory))
 
-  def add(route: String)(actions: PartialFunction[HttpMethod, ResourceAction[C]]): this.type =
-    this.add(route-> new ActionRouting(actions, route))
+  def add(route: String, attributes: Map[HttpMethod, Map[Any, Any]])(actions: PartialFunction[HttpMethod, ResourceAction[C]]): this.type =
+    this.add(route-> new ActionRouting(actions, route, attributes))
 
-  def add(route: String, method: HttpMethod, action: ResourceAction[C]): this.type = {
-    this.add(route) {
+  def add(route: String, method: HttpMethod, action: ResourceAction[C], attributes: Map[Any, Any]): this.type = {
+    this.add(route, Map(method -> attributes)) {
       case `method` => action
     }
   }
+
+  def add(route: String)(actions: PartialFunction[HttpMethod, ResourceAction[C]]): this.type =
+    this.add(route-> new ActionRouting(actions, route, Map()))
+
+  def add(route: String, method: HttpMethod, action: ResourceAction[C]): this.type =
+    this.add(route, method, action, Map())
 
   def addSubRouter[S<:BaseResource : ResourceWrapper](route: String, factory: ControllerFactory[C, S])(block: SubRestResourceRouter[C, S] => SubRestResourceRouter[C, S]): this.type =
     this.add(block(new SubRestResourceRouter(route, factory)))
