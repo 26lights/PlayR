@@ -26,11 +26,11 @@ object ApiInfoItem {
 trait ApiInfo {
   this: RestRouter =>
 
-  def apiInfo = ApiInfo("", this)
+  def apiInfo = ApiInfo.action("", this)
 }
 
 object ApiInfo extends Controller with PlayRInfoConsumer{
-  def apply(prefix: String, router: RestRouter) = Action { request =>
+  def action(prefix: String, router: RestRouter) = Action { request =>
     val info = router.routeResource
     val json = Json.toJson(ApiInfoItem.fromRestRouteInfo(info.name, info))
     if(request.queryString.contains("pretty")){
@@ -39,4 +39,5 @@ object ApiInfo extends Controller with PlayRInfoConsumer{
       Ok(json)
     }
   }
+  def apply(prefix: String, router: RestRouter) = action(prefix, router)
 }
