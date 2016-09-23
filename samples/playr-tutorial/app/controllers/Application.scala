@@ -19,6 +19,8 @@ import models.EmployeeContainer
 import models.CompanyContainer
 import models.PersonContainer
 import models.DaysEnum
+import models.MonthEnum
+import models.NameEnum
 
 class CrmApi @Inject()(val cache: CacheApi) extends PlayRSubRouter{
   implicit val employeeContainer = EmployeeContainer(cache)
@@ -44,7 +46,11 @@ class Application @Inject()(val cache: CacheApi, crmApi: CrmApi) extends PlayRRo
   val api = RootApiRouter()
     .add(new ColorController)
     .add(crmApi)
-    .add(EnumValuesController(DaysEnum))
+    .add(EnumValuesController(
+        DaysEnum,
+        MonthEnum -> MonthEnum.values.filter(_.toString().startsWith("J")),
+        NameEnum
+    ))
     .withFilter(LoggingFilter)
 
   val info = Map(
