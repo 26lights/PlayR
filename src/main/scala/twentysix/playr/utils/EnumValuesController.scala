@@ -35,7 +35,17 @@ case class EnumValuesController(enums: EnumValues*) extends Resource[EnumValues]
 
   def fromId(sid: String) = enumMap.get(sid)
 
-  def list = Action { Ok(Json.toJson(enumMap.keys)) }
+  def list = Action { implicit request =>
+
+    if (request.getQueryString("detailed").map(_ == "true").getOrElse(false)) {
+      Ok(Json.toJson(enumMap.map {
+        case (k, v) => Json.obj("name" -> v.name, "values" -> v.values)
+      }))
+    } else {
+      Ok(Json.toJson(enumMap.keys))
+    }
+
+  }
 
   def read(value: EnumValues) = Action{ Ok(Json.obj("name" -> value.name, "values" -> value.values)) }
 }
