@@ -6,6 +6,8 @@ import com.google.common.base.CaseFormat
 import play.api.mvc.Action
 import twentysix.playr.simple.ResourceRead
 import play.api.libs.json.Json
+import play.api.libs.json.JsValue
+import play.api.libs.json.JsString
 import twentysix.playr.simple.Resource
 import twentysix.playr.simple.ResourceList
 
@@ -14,14 +16,14 @@ trait FilteredEnum {
   def inUse: this.ValueSet
 }
 
-case class EnumValues(name: String, values: Set[String])
+case class EnumValues(name: String, values: Iterable[JsValue])
 object EnumValues {
   implicit def enumerationToEnumValues(enum: Enumeration) = EnumValues(enum, enum.values)
   implicit def filteredEnumerationToEnumValues(enum: Enumeration with FilteredEnum) = EnumValues(enum, enum.inUse)
   implicit def enumerationTupleToEnumValues[E<:Enumeration](enum: Tuple2[E, E#ValueSet]) = EnumValues(enum._1, enum._2)
 
   def apply[E<:Enumeration](enum: E, values: E#ValueSet): EnumValues =
-    EnumValues(enum.toString(), values.map{ v:E#Value => v.toString() })
+    EnumValues(enum.toString(), values.map{ v:E#Value => JsString(v.toString()) })
 }
 
 case class EnumValuesController(enums: EnumValues*) extends Resource[EnumValues]
