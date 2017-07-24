@@ -1,5 +1,6 @@
 package controllers
 
+import scala.concurrent.ExecutionContext
 import play.api._
 import play.api.mvc._
 import twentysix.playr.RestApiRouter
@@ -39,7 +40,7 @@ class CrmApi @Inject()(val cache: CacheApi) extends PlayRSubRouter{
     }
 }
 
-class Application @Inject()(val cache: CacheApi, crmApi: CrmApi) extends PlayRRouter with PlayRInfo {
+class Application @Inject()(val cache: CacheApi, crmApi: CrmApi)(implicit ec: ExecutionContext) extends PlayRRouter with PlayRInfo {
 
   implicit val colorContainer = ColorContainer(cache)
 
