@@ -2,15 +2,15 @@ package twentysix.playr.core
 
 import reflect.runtime.universe.Type
 import play.api.mvc.EssentialAction
-import play.api.mvc.Controller
+import play.api.mvc.BaseController
 import scala.util.control.Exception.catching
 import twentysix.playr.ResourceWrapper
 import twentysix.playr.RestRouteFilter
 
 /**
- * Define the conversion from an url id to a real object
- */
-trait BaseResource extends Controller {
+  * Define the conversion from an url id to a real object
+  */
+trait BaseResource extends BaseController {
   def name: String
   type IdentifierType
 
@@ -30,8 +30,8 @@ trait ResourceTrait[R] extends BaseResource {
 }
 
 /**
- * Respond to HTTP GET method without id
- */
+  * Respond to HTTP GET method without id
+  */
 trait ResourceList {
   this: BaseResource =>
 
@@ -39,8 +39,8 @@ trait ResourceList {
 }
 
 /**
- * Respond to HTTP GET method with an id
- */
+  * Respond to HTTP GET method with an id
+  */
 trait ResourceRead {
   this: BaseResource =>
 
@@ -48,8 +48,8 @@ trait ResourceRead {
 }
 
 /**
- * Respond to HTTP PUT method
- */
+  * Respond to HTTP PUT method
+  */
 trait ResourceWrite {
   this: BaseResource =>
 
@@ -57,8 +57,8 @@ trait ResourceWrite {
 }
 
 /**
- * Respond to HTTP POST method
- */
+  * Respond to HTTP POST method
+  */
 trait ResourceCreate {
   this: BaseResource =>
 
@@ -66,18 +66,17 @@ trait ResourceCreate {
 }
 
 /**
- * Respond to HTTP DELETE method
- */
+  * Respond to HTTP DELETE method
+  */
 trait ResourceDelete {
   this: BaseResource =>
 
   def deleteResource(id: IdentifierType): Option[EssentialAction]
 }
 
-
 /**
- * Respond to HTTP PATCH method
- */
+  * Respond to HTTP PATCH method
+  */
 trait ResourceUpdate {
   this: BaseResource =>
 
@@ -85,23 +84,22 @@ trait ResourceUpdate {
 }
 
 /**
- * Handle custom sub paths associated to a resource
- */
-abstract class ResourceAction[C<:BaseResource] {
+  * Handle custom sub paths associated to a resource
+  */
+abstract class ResourceAction[C <: BaseResource] {
   def handleAction(controller: C, id: C#IdentifierType): Option[EssentialAction]
 }
 
 /**
- * Handle sub resource controller construction
- */
-abstract class ControllerFactory[P<:BaseResource, C<:BaseResource: ResourceWrapper] {
+  * Handle sub resource controller construction
+  */
+abstract class ControllerFactory[P <: BaseResource, C <: BaseResource: ResourceWrapper] {
   def construct(parent: P, id: P#IdentifierType): C
 }
 
-
 /**
- * Allow rest api based resource filtering
- */
+  * Allow rest api based resource filtering
+  */
 trait ResourceRouteFilter {
   this: BaseResource =>
 

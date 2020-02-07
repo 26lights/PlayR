@@ -12,3 +12,6 @@ bin
 .tmpBin
 *.pyc
 .idea
+.bloop
+.metals
+project/metals.sbt

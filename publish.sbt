@@ -1,12 +1,7 @@
-publishTo := {
-  val isSnapshot = version.value.contains("-SNAPSHOT")
-  val repo = "http://build.26lights.net/nexus/content/repositories/public-"
-  val (name, url) = if (isSnapshot)
-    ("snapshots", repo + "snapshots")
-  else
-    ("releases", repo + "releases")
-  Some(name at url)
-}
+publishTo in ThisBuild := Some(
+  Resolver.file("file", sys.env.get("DIST_PATH").map(file).getOrElse(target.value / "dist"))
+)
+publishMavenStyle in ThisBuild := true
 
-credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
-
+Compile / packageDoc / publishArtifact := false
+Compile / packageSrc / publishArtifact := false
