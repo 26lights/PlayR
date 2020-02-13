@@ -6,8 +6,11 @@ import play.api.mvc._
 import play.api.libs.json.Json
 import models._
 import play.api.cache.CacheApi
+import javax.inject.Inject
 
-class PersonController(implicit personContainer: PersonContainer) extends RestCrudController[Person]{
+class PersonController @Inject() (implicit personContainer: PersonContainer)
+    extends RestCrudController[Person]
+    with InjectedController {
   val name = "person"
 
   def fromId(sid: String) = toInt(sid).flatMap(id => personContainer.get(id))
@@ -23,7 +26,7 @@ class PersonController(implicit personContainer: PersonContainer) extends RestCr
 
   def write(person: Person) = Action { request =>
     request.body.asText match {
-      case Some(name) if (name.length > 0) => Ok(personContainer.update(person.copy(name=name)).name)
+      case Some(name) if (name.length > 0) => Ok(personContainer.update(person.copy(name = name)).name)
       case _                               => BadRequest("Invalid name")
     }
   }

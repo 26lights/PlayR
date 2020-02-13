@@ -12,7 +12,7 @@ trait RouterWithPrefix extends Router { self =>
   def routesWithPrefix(prefix: String) = self.routes
 
   def withPrefix(prefix: String): Router = {
-    if ((prefix=="") || (prefix == "/")) {
+    if ((prefix == "") || (prefix == "/")) {
       self
     } else {
       new Router {
@@ -20,7 +20,7 @@ trait RouterWithPrefix extends Router { self =>
           val p = if (prefix.endsWith("/")) prefix.drop(1) else prefix
           val prefixed: PartialFunction[RequestHeader, RequestHeader] = {
             case rh: RequestHeader if rh.path.startsWith(p) => {
-              rh.copy(path = rh.path.drop(p.length))
+              rh.withTarget(rh.target.withPath(rh.path.drop(p.length)))
             }
           }
           Function.unlift(prefixed.lift.andThen(_.flatMap(self.routesWithPrefix(p).lift)))

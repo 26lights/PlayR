@@ -8,4 +8,6 @@ scalacOptions += "-language:reflectiveCalls"
 
 lazy val playr = RootProject(file("../.."))
 
-lazy val playrDemo = project in file(".") dependsOn playr enablePlugins(PlayScala)
+lazy val playrDemo = project in file(".") dependsOn playr enablePlugins (PlayScala) settings (
+  libraryDependencies += guice
+)

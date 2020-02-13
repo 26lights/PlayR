@@ -8,6 +8,7 @@ import play.api.mvc.EssentialAction
 import play.api.mvc.Results.Ok
 import play.api.mvc.Action
 import play.api.routing.Router
+import play.api.mvc.ControllerComponents
 
 /**
   * Helper traits to help creating dependency injectable play'r routers
@@ -44,12 +45,14 @@ object di {
   object PlayRInfoConsumer {
     implicit def fromActionProvider(provider: (String, RestRouter) => EssentialAction) = {
       new PlayRInfoConsumer {
-        def apply(prefix: String, api: RestRouter): ConsumerRoutes = provider(prefix, api)
+        def apply(prefix: String, api: RestRouter): ConsumerRoutes =
+          provider(prefix, api)
       }
     }
     implicit def fromSimpleAction(provider: => EssentialAction) = {
       new PlayRInfoConsumer {
-        def apply(prefix: String, api: RestRouter): ConsumerRoutes = provider
+        def apply(prefix: String, api: RestRouter): ConsumerRoutes =
+          provider
       }
     }
   }
@@ -70,4 +73,5 @@ object di {
     override def routes = routesWithPrefix("")
   }
 
+  trait ApiInfo extends InjectedController with RestRouter with twentysix.playr.ApiInfo
 }

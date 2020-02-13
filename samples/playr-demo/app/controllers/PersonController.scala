@@ -15,17 +15,18 @@ trait PersonList {
   val persons: Map[Int, Person]
 }
 
-class Persons extends PersonList{
+class Persons extends PersonList {
   val persons = Map(
     1 -> Person("john"),
     2 -> Person("jane")
   )
 }
 
-case class PersonController(personList: PersonList) extends Controller
-                                                       with Resource[Person]
-                                                       with ResourceRead
-                                                       with ResourceList {
+case class PersonController @Inject() (personList: PersonList)
+    extends InjectedController
+    with Resource[Person]
+    with ResourceRead
+    with ResourceList {
   def name = "person"
 
   implicit val personFormat = Json.format[Person]
@@ -39,7 +40,9 @@ case class PersonController(personList: PersonList) extends Controller
   def list() = Action { Ok(Json.toJson(persons.keys)) }
 }
 
-class PersonRouter @Inject() (personList: PersonList) extends RestResourceRouter(PersonController(personList)) with ApiInfo {
+class PersonRouter @Inject() (personController: PersonController)
+    extends RestResourceRouter(personController)
+    with di.ApiInfo {
 
-  Logger.debug(s"Router instance created with person list: $personList")
+  Logger.debug(s"Router instance created with person list: ${personController.persons}")
 }

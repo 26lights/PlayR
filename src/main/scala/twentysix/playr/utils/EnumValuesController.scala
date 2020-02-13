@@ -1,6 +1,5 @@
 package twentysix.playr.utils
 
-import javax.inject.Inject
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe._
 import com.google.common.base.CaseFormat
@@ -34,9 +33,8 @@ object EnumValues {
     }))
 }
 
-case class EnumValuesController @Inject() (cc: ControllerComponents)(enums: EnumValues*)(implicit ec: ExecutionContext)
-    extends AbstractController(cc)
-    with Resource[EnumValues]
+abstract class EnumValuesController(enums: EnumValues*)
+    extends Resource[EnumValues]
     with ResourceList
     with ResourceRead {
   val name = "constants"
@@ -48,6 +46,7 @@ case class EnumValuesController @Inject() (cc: ControllerComponents)(enums: Enum
   def fromId(sid: String) = enumMap.get(sid)
 
   def list = Action.async { implicit request =>
+    implicit val ec = this.controllerComponents.executionContext
     if (request.getQueryString("detailed").map(_ == "true").getOrElse(false)) {
       Future
         .sequence(enumMap.map {
@@ -63,6 +62,7 @@ case class EnumValuesController @Inject() (cc: ControllerComponents)(enums: Enum
   }
 
   def read(value: EnumValues) = Action.async {
+    implicit val ec = this.controllerComponents.executionContext
     value.values.map { values =>
       Ok(Json.obj("name" -> value.name, "values" -> values))
     }

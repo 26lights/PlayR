@@ -19,7 +19,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.play" %% "play" % "2.6.25",
   // test scope
   "com.typesafe.play" %% "play-test" % "2.6.25" % "test",
-  "org.scalatestplus.play" %% "scalatestplus-play" % "1.5.1" % "test"
+  "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.2" % "test"
 )
 
 enablePlugins(SphinxPlugin, SiteScaladocPlugin)

@@ -5,7 +5,6 @@ import play.api.mvc.RequestHeader
 import twentysix.playr.RestRouteActionType._
 import play.api.mvc.Action
 import play.api.mvc.EssentialAction
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
 case class TestFilter() extends SimpleRestRouteFilter[Boolean] {
   def filter(
@@ -28,6 +27,8 @@ case class TestFilter() extends SimpleRestRouteFilter[Boolean] {
 object TestFilter {
   val TestHeader = "X-TEST-FILTER"
   val TestPathHeader = "X-TEST-PATH"
+
+  import scala.concurrent.ExecutionContext.Implicits.global
 
   def testAction(actionType: RestRouteActionType, path: String)(action: EssentialAction) = {
     EssentialAction { rh =>

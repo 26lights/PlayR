@@ -1,10 +1,11 @@
 package models
 
-import play.api.cache.CacheApi
+import play.api.cache.SyncCacheApi
+import javax.inject.Inject
 
 case class Company(id: Int, name: String) extends CachedItem
 
-case class CompanyContainer(cache: CacheApi) extends CachedContainer[Company]{
+case class CompanyContainer @Inject() (cache: SyncCacheApi) extends CachedContainer[Company] {
   val cacheKey = "company"
 
   val defaultItems = Map(

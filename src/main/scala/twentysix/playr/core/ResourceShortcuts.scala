@@ -8,13 +8,10 @@ import scala.concurrent.Future
 import play.api.mvc.Result
 import play.api.libs.json.JsValue
 import play.api.mvc.BaseController
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import play.api.libs.json.JsSuccess
-import play.api.libs.json.JsSuccess
-import play.api.libs.json.JsSuccess
 
 trait ResourceShortcuts {
   this: BaseController =>
+
   def ifValidBody[T: Reads](block: T => Result): Request[JsValue] => Result = { implicit request =>
     withValidBody[T](block)
   }
@@ -33,7 +30,7 @@ trait ResourceShortcuts {
   def withValidBodyAsync[T: Reads](block: T => Future[Result])(implicit request: Request[JsValue]): Future[Result] = {
     request.body.validate[T] match {
       case s: JsSuccess[T] => block(s.get)
-      case e: JsError      => Future(BadRequest(JsError.toJson(e)))
+      case e: JsError      => Future(BadRequest(JsError.toJson(e)))(controllerComponents.executionContext)
     }
   }
 
@@ -48,7 +45,7 @@ trait ResourceShortcuts {
     def withValidTransformAsync[A <: JsValue](rds: Reads[A])(block: A => Future[Result]): Future[Result] = {
       value.transform(rds) match {
         case s: JsSuccess[A] => block(s.get)
-        case e: JsError      => Future(BadRequest(JsError.toJson(e)))
+        case e: JsError      => Future(BadRequest(JsError.toJson(e)))(controllerComponents.executionContext)
       }
     }
   }

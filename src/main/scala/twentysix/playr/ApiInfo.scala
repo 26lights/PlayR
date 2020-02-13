@@ -8,6 +8,14 @@ import play.api.libs.json.Json
 import play.api.libs.json.Writes
 import play.api.libs.json.JsString
 import twentysix.playr.di.PlayRInfoConsumer
+import play.api.mvc.InjectedController
+import play.api.mvc.BaseController
+import play.api.mvc.ControllerHelpers
+import play.api.mvc.ControllerComponents
+import play.api.mvc.Results
+import play.api.mvc.ActionBuilder
+import play.api.mvc.Request
+import play.api.mvc.AnyContent
 
 case class ApiInfoItem(path: String, label: String, actions: RestRouteActionType.ValueSet, children: Seq[ApiInfoItem])
 object ApiInfoItem {
@@ -18,26 +26,33 @@ object ApiInfoItem {
 
   def fromRestRouteInfo(path: String, info: RestRouteInfo): ApiInfoItem = {
     ApiInfoItem(
-      path, info.name, info.actions, info.subResources.map(i => fromRestRouteInfo(s"$path/${i.name}", i))
+      path,
+      info.name,
+      info.actions,
+      info.subResources.map(i => fromRestRouteInfo(s"$path/${i.name}", i))
     )
   }
 }
 
 trait ApiInfo {
-  this: RestRouter =>
+  this: RestRouter with BaseController =>
 
-  def apiInfo = ApiInfo.action("", this)
+  def apiInfo = ApiInfo.action(Action)("", this)
 }
 
-object ApiInfo extends Controller with PlayRInfoConsumer{
-  def action(prefix: String, router: RestRouter) = Action { request =>
-    val info = router.routeResource
-    val json = Json.toJson(ApiInfoItem.fromRestRouteInfo(info.name, info))
-    if(request.queryString.contains("pretty")){
-      Ok(Json.prettyPrint(json))
-    } else {
-      Ok(json)
-    }
+object ApiInfo extends Results {
+  def action(actionBuilder: ActionBuilder[Request, AnyContent])(prefix: String, router: RestRouter) = actionBuilder {
+    request =>
+      val info = router.routeResource
+      val json = Json.toJson(ApiInfoItem.fromRestRouteInfo(info.name, info))
+      if (request.queryString.contains("pretty")) {
+        Ok(Json.prettyPrint(json))
+      } else {
+        Ok(json)
+      }
   }
-  def apply(prefix: String, router: RestRouter) = action(prefix, router)
+
+  def withController(controller: BaseController): PlayRInfoConsumer = new PlayRInfoConsumer {
+    def apply(prefix: String, api: RestRouter): ConsumerRoutes = action(controller.Action)(prefix, api)
+  }
 }

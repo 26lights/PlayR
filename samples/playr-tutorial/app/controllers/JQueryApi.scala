@@ -1,14 +1,19 @@
 package controllers
 
 import twentysix.playr.RestRouter
-import play.api.mvc.Controller
-import play.api.mvc.Action
+import play.api.mvc.BaseController
+import play.api.mvc.Results
 import twentysix.playr.RestRouteActionType
 import twentysix.playr.RestRouteInfo
 import twentysix.playr.ResourceCaps
 import twentysix.playr.di.PlayRInfoConsumer
 
-case class JQueryApiItem(path: String, name: String, actions: RestRouteActionType.ValueSet, children: Seq[JQueryApiItem])
+case class JQueryApiItem(
+    path: String,
+    name: String,
+    actions: RestRouteActionType.ValueSet,
+    children: Seq[JQueryApiItem]
+)
 
 object JQueryApiItem {
   protected val CapsFilter = ResourceCaps.ValueSet(
@@ -21,26 +26,22 @@ object JQueryApiItem {
 
   def fromRouteRouteInfo(api: RestRouteInfo, path: String = ""): Seq[JQueryApiItem] = {
     val name = api.name.capitalize
-    if(CapsFilter.intersect(api.caps).isEmpty) {
+    if (CapsFilter.intersect(api.caps).isEmpty) {
       api.subResources.flatMap { subApi =>
-        fromRouteRouteInfo(subApi, path+api.name+"/")
+        fromRouteRouteInfo(subApi, path + api.name + "/")
       }
     } else {
-      Seq(JQueryApiItem(path+api.name, name, api.actions, children = api.subResources.flatMap { subApi =>
+      Seq(JQueryApiItem(path + api.name, name, api.actions, children = api.subResources.flatMap { subApi =>
         fromRouteRouteInfo(subApi)
       }))
     }
   }
 }
 
-trait JQueryApi extends Controller{
-  val api: RestRouter
-
-  def jqueryApi = JQueryApi("", api)
-}
-
-object JQueryApi extends Controller with PlayRInfoConsumer{
-  def apply(prefix: String, api: RestRouter) = Action { request =>
-    Ok(views.js.jquery(JQueryApiItem.fromRouteRouteInfo(api.routeResource), prefix))
+object JQueryApi extends Results {
+  def withController(controller: BaseController) = new PlayRInfoConsumer {
+    def apply(prefix: String, api: RestRouter) = controller.Action { request =>
+      Ok(views.js.jquery(JQueryApiItem.fromRouteRouteInfo(api.routeResource), prefix))
+    }
   }
 }

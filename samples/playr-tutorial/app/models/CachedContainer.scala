@@ -1,33 +1,33 @@
 package models
 
-import play.api.cache.CacheApi
+import play.api.cache.SyncCacheApi
 
 trait CachedItem {
   def id: Int
 }
 
-trait CachedContainer[T<:CachedItem] {
-  val cache: CacheApi
+trait CachedContainer[T <: CachedItem] {
+  val cache: SyncCacheApi
   val cacheKey: String
-  val defaultItems: Map[Int,T]
+  val defaultItems: Map[Int, T]
 
-  def items = cache.getOrElse[Map[Int, T]](cacheKey)(defaultItems)
-  def lastId = cache.getOrElse[Int](cacheKey+"_counter")(defaultItems.size+1)
+  def items = cache.get[Map[Int, T]](cacheKey).getOrElse(defaultItems)
+  def lastId = cache.get[Int](cacheKey + "_counter").getOrElse(defaultItems.size + 1)
 
   def get(id: Int): Option[T] = items.get(id)
 
   def list = items.keys
 
-  def filterList(filter: T=>Boolean) = items.values.filter(filter).map(_.id)
+  def filterList(filter: T => Boolean) = items.values.filter(filter).map(_.id)
 
   def delete(item: T): T = {
     cache.set(cacheKey, items - item.id)
     item
   }
 
-  def nextId ={
+  def nextId = {
     val next = lastId + 1
-    cache.set(cacheKey+"_counter", next)
+    cache.set(cacheKey + "_counter", next)
     next
   }
 

@@ -1,10 +1,11 @@
 package models
 
-import play.api.cache.CacheApi
+import play.api.cache.SyncCacheApi
+import javax.inject.Inject
 
 case class Color(id: Int, name: String, rgb: String) extends CachedItem
 
-case class ColorContainer(cache: CacheApi) extends CachedContainer[Color]{
+case class ColorContainer @Inject() (cache: SyncCacheApi) extends CachedContainer[Color] {
   val cacheKey = "colors"
 
   val defaultItems = Map(

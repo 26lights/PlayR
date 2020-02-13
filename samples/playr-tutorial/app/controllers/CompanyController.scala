@@ -6,8 +6,12 @@ import play.api.mvc._
 import play.api.libs.json.Json
 import models._
 import play.api.cache.CacheApi
+import javax.inject.Inject
 
-class CompanyController(implicit companyContainer: CompanyContainer, employeeContainer: EmployeeContainer) extends RestCrudController[Company] with LoggingFilter{
+class CompanyController @Inject() (implicit companyContainer: CompanyContainer, employeeContainer: EmployeeContainer)
+    extends RestCrudController[Company]
+    with InjectedController
+    with LoggingFilter {
   val name = "company"
 
   def fromId(sid: String) = toInt(sid).flatMap(id => companyContainer.get(id))
@@ -23,7 +27,7 @@ class CompanyController(implicit companyContainer: CompanyContainer, employeeCon
 
   def write(company: Company) = Action { request =>
     request.body.asText match {
-      case Some(name) => Ok(companyContainer.update(company.copy(name=name)).name)
+      case Some(name) => Ok(companyContainer.update(company.copy(name = name)).name)
       case None       => BadRequest("Invalid name")
     }
   }
@@ -37,7 +41,7 @@ class CompanyController(implicit companyContainer: CompanyContainer, employeeCon
 
   def functions(company: Company) = Action {
     val functions = for {
-      item <- employeeContainer.items.values if item.companyId==company.id
+      item <- employeeContainer.items.values if item.companyId == company.id
     } yield item.function
 
     Ok(Json.toJson(functions))
