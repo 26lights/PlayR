@@ -3,5 +3,5 @@ publishTo in ThisBuild := Some(
 )
 publishMavenStyle in ThisBuild := true
 
-Compile / packageDoc / publishArtifact := false
-Compile / packageSrc / publishArtifact := false
+// Compile / packageDoc / publishArtifact := false
+// Compile / packageSrc / publishArtifact := false
