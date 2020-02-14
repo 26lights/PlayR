@@ -1,7 +1,6 @@
 package twentysix.playr
 
 import scala.language.implicitConversions
-import play.api.mvc.InjectedController
 import play.api.mvc.RequestHeader
 import play.api.mvc.Handler
 import play.api.mvc.EssentialAction
@@ -9,6 +8,7 @@ import play.api.mvc.Results.Ok
 import play.api.mvc.Action
 import play.api.routing.Router
 import play.api.mvc.ControllerComponents
+import play.api.mvc.BaseController
 
 /**
   * Helper traits to help creating dependency injectable play'r routers
@@ -21,7 +21,7 @@ object di {
     implicit def subRouterToApiROuter(router: PlayRSubRouter): RestApiRouter = router.router
   }
 
-  trait PlayRRouter extends InjectedController with RouterWithPrefix {
+  trait PlayRRouter extends BaseController with RouterWithPrefix {
     val api: RestApiRouter
 
     def routes = api.routes
@@ -73,5 +73,5 @@ object di {
     override def routes = routesWithPrefix("")
   }
 
-  trait ApiInfo extends InjectedController with RestRouter with twentysix.playr.ApiInfo
+  trait ApiInfo extends BaseController with RestRouter with twentysix.playr.ApiInfo
 }

@@ -42,6 +42,7 @@ case class PersonController @Inject() (personList: PersonList)
 
 class PersonRouter @Inject() (personController: PersonController)
     extends RestResourceRouter(personController)
+    with InjectedController
     with di.ApiInfo {
 
   Logger.debug(s"Router instance created with person list: ${personController.persons}")

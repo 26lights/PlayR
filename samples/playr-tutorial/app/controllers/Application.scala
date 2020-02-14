@@ -58,7 +58,8 @@ class Application @Inject() (
 )(
     implicit ec: ExecutionContext
 ) extends PlayRRouter
-    with PlayRInfo {
+    with PlayRInfo
+    with InjectedController {
 
   val api = RootApiRouter()
     .add(colorController)

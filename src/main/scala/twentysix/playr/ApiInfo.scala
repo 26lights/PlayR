@@ -8,7 +8,6 @@ import play.api.libs.json.Json
 import play.api.libs.json.Writes
 import play.api.libs.json.JsString
 import twentysix.playr.di.PlayRInfoConsumer
-import play.api.mvc.InjectedController
 import play.api.mvc.BaseController
 import play.api.mvc.ControllerHelpers
 import play.api.mvc.ControllerComponents
