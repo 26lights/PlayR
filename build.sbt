@@ -2,8 +2,7 @@ name := "playr"
 
 organization := "26lights"
 
-scalaVersion := "2.11.12"
-// scalaVersion := "2.12.10"
+scalaVersion := "2.12.10"
 
 resolvers += "Typesafe repository" at "https://repo.typesafe.com/typesafe/releases/"
 
